@@ -35,6 +35,11 @@ public:
 	static const uint64_t sixth_rank = 280375465082880ULL;
 	static const uint64_t seventh_rank = 71776119061217280ULL;
 	static const uint64_t eighth_rank = 18374686479671623680ULL;
+
+	static const uint64_t w_queenside_castling_mask = 14ULL;
+	static const uint64_t w_kingside_castling_mask = 96ULL;
+	static const uint64_t b_queenside_castling_mask = 1008806316530991104ULL;
+	static const uint64_t b_kingside_castling_mask = 6917529027641081856ULL;
 private:
 	static int index_64[64];
 };

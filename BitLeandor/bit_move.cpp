@@ -25,8 +25,29 @@ uint16_t bit_move::get_flags() {
 
 std::string bit_move::to_string(bit_move m)
 {
-
-	return squares_to_string[m.get_origin()] + squares_to_string[m.get_target()];
+	std::string s = squares_to_string[m.get_origin()] + squares_to_string[m.get_target()];
+	uint16_t flags = m.get_flags();
+	if (flags >= 8) { // if it is promotion
+		uint8_t last_digits = flags & 3U;
+		switch (last_digits)
+		{
+		case 0:
+			s += "n";
+			break;
+		case 1:
+			s += "b";
+			break;
+		case 2:
+			s += "r";
+			break;
+		case 3:
+			s += "q";
+			break;
+		default:
+			break;
+		}
+	}
+	return s;
 }
 
 std::string bit_move::squares_to_string[64] = {

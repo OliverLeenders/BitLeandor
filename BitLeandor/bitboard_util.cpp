@@ -47,5 +47,6 @@ void bitboard_util::print_bitboard(uint64_t bitboard) {
 		std::cout << "\n";
 	}
 	std::cout << std::endl;
+	std::cout << bitboard << std::endl;
 	return;
 }

@@ -12,7 +12,7 @@ int main() {
     std::string pos = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     bitboard board;
     board.pos_from_fen(pos);
-    bitboard_util::print_bitboard(board.pawns[0]);
+    bitboard_util::print_bitboard((1ULL << 61) | (1ULL << 62));
     movelist l;
     movegen::generate_knight_qmoves(board, &l);
     for (int i = 0; i < l.size; i++) {
