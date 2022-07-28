@@ -9,8 +9,7 @@ bitboard_util::~bitboard_util()
 }
 
 uint64_t bitboard_util::set_bit(int bit) {
-	uint64_t res = 1ULL << bit;
-	return res;
+	return 1ULL << bit;
 }
 
 bool bitboard_util::is_bit_set(uint64_t bitboard, int bit) {

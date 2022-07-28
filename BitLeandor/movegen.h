@@ -3,7 +3,7 @@
 #include <list>
 #include "bit_move.h"
 #include "bitboard_util.h"
-#include "bitboards.h"
+#include "bitboard.h"
 #include "movelist.h"
 
 class movegen

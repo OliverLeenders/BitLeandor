@@ -24,7 +24,7 @@
     <ClInclude Include="bitboard_util.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="bitboards.h">
+    <ClInclude Include="bitboard.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="magics.h">
@@ -39,6 +39,9 @@
     <ClInclude Include="movelist.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="board_state.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="attacks.cpp">
@@ -50,7 +53,7 @@
     <ClCompile Include="bitboard_util.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="bitboards.cpp">
+    <ClCompile Include="bitboard.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="magics.cpp">
@@ -66,6 +69,9 @@
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="movelist.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="board_state.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
   </ItemGroup>

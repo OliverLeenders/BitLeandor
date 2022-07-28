@@ -1,8 +1,8 @@
 #include "bit_move.h"
 
-bit_move::bit_move(uint64_t origin, uint16_t target, uint16_t flags)
+bit_move::bit_move(uint32_t origin, uint32_t target, uint32_t flags, uint32_t type, uint32_t captured_type)
 {
-	this->move = ((flags & 15) << 12) | ((origin & 63) << 6) | (target & 63);
+	this->move = ((type & 15) << 20) | ((captured_type & 15 ) << 16) | ((flags & 15) << 12) | ((origin & 63) << 6) | (target & 63);
 }
 
 bit_move::bit_move() {
@@ -19,8 +19,16 @@ uint16_t bit_move::get_target() {
 	return this->move & 63;
 }
 
-uint16_t bit_move::get_flags() {
+uint8_t bit_move::get_flags() {
 	return (this->move >> 12) & 15;
+}
+
+uint8_t bit_move::get_captured_type() {
+	return (this->move >> 16) & 15;
+}
+
+uint8_t bit_move::get_piece_type() {
+	return (this->move >> 20) & 15;
 }
 
 std::string bit_move::to_string(bit_move m)

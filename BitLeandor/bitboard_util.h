@@ -40,6 +40,17 @@ public:
 	static const uint64_t w_kingside_castling_mask = 96ULL;
 	static const uint64_t b_queenside_castling_mask = 1008806316530991104ULL;
 	static const uint64_t b_kingside_castling_mask = 6917529027641081856ULL;
+
+	enum {
+		empty, 
+		pawn,
+		knight,
+		bishop,
+		rook,
+		queen,
+		king
+	};
+	
 private:
 	static int index_64[64];
 };

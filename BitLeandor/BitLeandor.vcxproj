@@ -140,9 +140,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="attacks.h" />
-    <ClInclude Include="bitboards.h" />
+    <ClInclude Include="bitboard.h" />
     <ClInclude Include="bitboard_util.h" />
     <ClInclude Include="bit_move.h" />
+    <ClInclude Include="board_state.h" />
     <ClInclude Include="movelist.h" />
     <ClInclude Include="magics.h" />
     <ClInclude Include="movegen.h" />
@@ -150,9 +151,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="attacks.cpp" />
-    <ClCompile Include="bitboards.cpp" />
+    <ClCompile Include="bitboard.cpp" />
     <ClCompile Include="bitboard_util.cpp" />
     <ClCompile Include="bit_move.cpp" />
+    <ClCompile Include="board_state.cpp" />
     <ClCompile Include="magics.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="movegen.cpp" />

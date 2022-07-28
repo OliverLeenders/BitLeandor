@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include "bitboard_util.h"
-#include "bitboards.h"
+#include "bitboard.h"
 #include "movegen.h"
 int main() {
     // initializing attack tables

@@ -5,6 +5,7 @@
 #include <ctype.h>
 #include "utility.h"
 #include "bit_move.h"
+#include "board_state.h"
 
 class bitboard
 {
@@ -34,5 +35,11 @@ public:
 	};
 	int ep_target_square = -1;
 	bool is_legal(bit_move* m);
+	void make_move(bit_move* m);
+	void unmake_move();
+	uint8_t piece_type_from_index(unsigned long i);
+	std::vector<board_state> game_history = {};
+	uint16_t fifty_move_rule_counter = 0;
+	uint16_t full_move_clock = 1;
 };
 
