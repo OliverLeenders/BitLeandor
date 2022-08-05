@@ -42,6 +42,9 @@
     <ClInclude Include="board_state.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="perft.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="attacks.cpp">
@@ -72,6 +75,9 @@
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="board_state.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="perft.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
   </ItemGroup>

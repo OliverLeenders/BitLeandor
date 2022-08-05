@@ -113,19 +113,19 @@ void attacks::init_bishop_attack_masks() {
 	for (int i = 0; i < 64; i++) {
 		uint64_t pattern = 0ULL;
 		// + 7 vector
-		for (int j = i + 7; j % 8 > 0 && j < 64; j += 7) {
+		for (int j = i + 7; j % 8 != 7 && j < 56; j += 7) {
 			pattern |= bitboard_util::set_bit(j);
 		}
 		// + 9 vector
-		for (int j = i + 9; j % 8 < 7 && j < 64; j += 9) {
+		for (int j = i + 9; j % 8 != 0 && j < 56; j += 9) {
 			pattern |= bitboard_util::set_bit(j);
 		}
 		// - 7 vector
-		for (int j = i - 7; j % 8 < 7 && j >= 0; j -= 7) {
+		for (int j = i - 7; j % 8 != 0 && j >= 8; j -= 7) {
 			pattern |= bitboard_util::set_bit(j);
 		}
 		// - 9 vector
-		for (int j = i - 9; j % 8 > 0 && j >= 0; j -= 9) {
+		for (int j = i - 9; j % 8 != 7 && j >= 8; j -= 9) {
 			pattern |= bitboard_util::set_bit(j);
 		}
 		// store pattern
@@ -134,28 +134,29 @@ void attacks::init_bishop_attack_masks() {
 	return;
 }
 
+// credit goes to maksim korzh for this code
+// my own approach introduced a bug so i borrowed his
 void attacks::init_rook_attack_masks() {
 	for (int i = 0; i < 64; i++) {
-		uint64_t pattern = 0ULL;
-		// + 8 vector
-		for (int j = i + 8; j < 56; j += 8) {
-			pattern |= bitboard_util::set_bit(j);
-		}
-		// + 1 vector
-		for (int j = i + 1; j % 8 < 7; j++) {
-			pattern |= bitboard_util::set_bit(j);
-		}
-		// - 8 vector
-		for (int j = i - 8; j >= 8; j -= 8) {
-			pattern |= bitboard_util::set_bit(j);
-		}
-		// - 1 vector
-		for (int j = i - 1; j % 8 > 0 && j >= 0; j--) {
-			pattern |= bitboard_util::set_bit(j);
-		}
-		// store pattern
-		rook_attack_masks[i] = pattern;
+		// result attacks bitboard
+		uint64_t attacks = 0ULL;
+
+		// init ranks & files
+		int r, f;
+
+		// init target rank & files
+		int tr = i / 8;
+		int tf = i % 8;
+
+		// mask relevant rook occupancy bits
+		for (r = tr + 1; r <= 6; r++) attacks |= (1ULL << (r * 8 + tf));
+		for (r = tr - 1; r >= 1; r--) attacks |= (1ULL << (r * 8 + tf));
+		for (f = tf + 1; f <= 6; f++) attacks |= (1ULL << (tr * 8 + f));
+		for (f = tf - 1; f >= 1; f--) attacks |= (1ULL << (tr * 8 + f));
+		
+		rook_attack_masks[i] = attacks;
 	}
+	//std::cout << "over" << std::endl;
 	return;
 }
 

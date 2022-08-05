@@ -147,6 +147,7 @@
     <ClInclude Include="movelist.h" />
     <ClInclude Include="magics.h" />
     <ClInclude Include="movegen.h" />
+    <ClInclude Include="perft.h" />
     <ClInclude Include="utility.h" />
   </ItemGroup>
   <ItemGroup>
@@ -159,6 +160,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="movegen.cpp" />
     <ClCompile Include="movelist.cpp" />
+    <ClCompile Include="perft.cpp" />
     <ClCompile Include="utility.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
