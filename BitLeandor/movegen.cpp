@@ -132,7 +132,7 @@ void movegen::generate_knight_cmoves(bitboard* b, movelist* l)
 
 void movegen::generate_bishop_qmoves(bitboard* b, movelist* l)
 {
-	uint64_t bishops = b->bishops[b->side_to_move] | b->queens[b->side_to_move];
+	uint64_t bishops = b->bishops[b->side_to_move];
 	unsigned long origin;
 	unsigned long target; 
 	while (bishops != 0ULL)
@@ -151,7 +151,7 @@ void movegen::generate_bishop_qmoves(bitboard* b, movelist* l)
 
 void movegen::generate_bishop_cmoves(bitboard* b, movelist* l)
 {
-	uint64_t bishops = b->bishops[b->side_to_move] | b->queens[b->side_to_move];
+	uint64_t bishops = b->bishops[b->side_to_move];
 	unsigned long origin;
 	unsigned long target;
 	while (bishops != 0ULL)
@@ -171,7 +171,7 @@ void movegen::generate_bishop_cmoves(bitboard* b, movelist* l)
 
 void movegen::generate_rook_qmoves(bitboard* b, movelist* l)
 {
-	uint64_t rooks = b->rooks[b->side_to_move] | b->queens[b->side_to_move];
+	uint64_t rooks = b->rooks[b->side_to_move];
 	unsigned long origin;
 	unsigned long target;
 	while (rooks != 0ULL)
@@ -190,13 +190,14 @@ void movegen::generate_rook_qmoves(bitboard* b, movelist* l)
 
 void movegen::generate_rook_cmoves(bitboard* b, movelist* l)
 {
-	uint64_t rooks = b->rooks[b->side_to_move] | b->queens[b->side_to_move];
+	uint64_t rooks = b->rooks[b->side_to_move];
 	unsigned long origin;
 	unsigned long target;
 	while (rooks != 0ULL)
 	{
 		_BitScanForward64(&origin, rooks);
 		uint64_t rook_attacks = attacks::get_rook_attacks(origin, b->pieces[2]) & (b->pieces[!b->side_to_move]);
+		
 		while (rook_attacks != 0ULL) {
 			_BitScanForward64(&target, rook_attacks);
 			uint8_t capture_type = b->piece_type_from_index(target);
@@ -205,6 +206,47 @@ void movegen::generate_rook_cmoves(bitboard* b, movelist* l)
 			rook_attacks ^= 1ULL << target;
 		}
 		rooks ^= 1ULL << origin;
+	}
+}
+
+void movegen::generate_queen_qmoves(bitboard* b, movelist* l)
+{
+	uint64_t queens = b->queens[b->side_to_move];
+	unsigned long origin;
+	unsigned long target;
+	while (queens != 0ULL)
+	{
+		_BitScanForward64(&origin, queens);
+		uint64_t queen_attacks = attacks::get_rook_attacks(origin, b->pieces[2]) & (~b->pieces[2]);
+		queen_attacks |= attacks::get_bishop_attacks(origin, b->pieces[2]) & (~b->pieces[2]);
+		while (queen_attacks != 0ULL) {
+			_BitScanForward64(&target, queen_attacks);
+			l->moves[l->size] = *(new bit_move(origin, target, bit_move::quiet_move, bitboard_util::queen, bitboard_util::empty));
+			l->size++;
+			queen_attacks ^= 1ULL << target;
+		}
+		queens ^= 1ULL << origin;
+	}
+}
+
+void movegen::generate_queen_cmoves(bitboard* b, movelist* l)
+{
+	uint64_t queens = b->queens[b->side_to_move];
+	unsigned long origin;
+	unsigned long target;
+	while (queens != 0ULL)
+	{
+		_BitScanForward64(&origin, queens);
+		uint64_t queen_attacks = attacks::get_rook_attacks(origin, b->pieces[2]) & (b->pieces[!b->side_to_move]);
+		queen_attacks |= attacks::get_bishop_attacks(origin, b->pieces[2]) & (b->pieces[!b->side_to_move]);
+		while (queen_attacks != 0ULL) {
+			_BitScanForward64(&target, queen_attacks);
+			uint8_t capture_type = b->piece_type_from_index(target);
+			l->moves[l->size] = *(new bit_move(origin, target, bit_move::quiet_move, bitboard_util::queen, capture_type));
+			l->size++;
+			queen_attacks ^= 1ULL << target;
+		}
+		queens ^= 1ULL << origin;
 	}
 }
 
@@ -267,6 +309,7 @@ void movegen::generate_all_captures(bitboard* b, movelist* l)
 	generate_knight_cmoves(b, l);
 	generate_bishop_cmoves(b, l);
 	generate_rook_cmoves(b, l);
+	generate_queen_cmoves(b, l);
 	generate_king_cmoves(b, l);
 }
 
@@ -276,6 +319,7 @@ void movegen::generate_all_quiet_moves(bitboard* b, movelist* l)
 	generate_knight_qmoves(b, l);
 	generate_bishop_qmoves(b, l);
 	generate_rook_qmoves(b, l);
+	generate_queen_qmoves(b, l);
 	generate_king_qmoves(b, l);
 }
 

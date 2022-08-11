@@ -24,6 +24,7 @@ public:
 	int char_to_rank(char c);
 	int char_to_file(char c);
 	bool is_square_attacked(int square, bool side_to_move);
+	void print_board();
 	~bitboard();
 	char castling_rights = 0;
 	enum castling_rights_e

@@ -14,14 +14,15 @@ int main() {
 	std::string pos = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 	bitboard board;
 	board.pos_from_fen(pos);
-	movelist l_0;
-	//movegen::generate_all_pseudo_legal_moves(&board, &l_0);
-	//board.make_move(&l_0.moves[0]);
+	// movelist l_0;
+	// movegen::generate_all_pseudo_legal_moves(&board, &l_0);
+	// board.make_move(&l_0.moves[1]);
 	// movelist l_1;
 	// movegen::generate_all_pseudo_legal_moves(&board, &l_1);
 	// board.make_move(&l_1.moves[0]);
-	bitboard_util::print_bitboard(board.pieces[2]);
+	//bitboard_util::print_bitboard(board.pieces[2]);
 	std::cout <<perft::run_perft_console(&board, 3) << std::endl;
-	bitboard_util::print_bitboard(board.pieces[2]);
+	//bitboard_util::print_bitboard(attacks::get_bishop_attacks(2, board.pieces[2]));
+	board.print_board();
 	return 0;
 }

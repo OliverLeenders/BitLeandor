@@ -111,25 +111,22 @@ void attacks::init_pawn_attacks() {
 
 void attacks::init_bishop_attack_masks() {
 	for (int i = 0; i < 64; i++) {
-		uint64_t pattern = 0ULL;
-		// + 7 vector
-		for (int j = i + 7; j % 8 != 7 && j < 56; j += 7) {
-			pattern |= bitboard_util::set_bit(j);
-		}
-		// + 9 vector
-		for (int j = i + 9; j % 8 != 0 && j < 56; j += 9) {
-			pattern |= bitboard_util::set_bit(j);
-		}
-		// - 7 vector
-		for (int j = i - 7; j % 8 != 0 && j >= 8; j -= 7) {
-			pattern |= bitboard_util::set_bit(j);
-		}
-		// - 9 vector
-		for (int j = i - 9; j % 8 != 7 && j >= 8; j -= 9) {
-			pattern |= bitboard_util::set_bit(j);
-		}
-		// store pattern
-		bishop_attack_masks[i] = pattern;
+		// result attacks bitboard
+		uint64_t attacks = 0ULL;
+
+		// init ranks & files
+		int r, f;
+
+		// init target rank & files
+		int tr = i / 8;
+		int tf = i % 8;
+
+		// mask relevant bishop occupancy bits
+		for (r = tr + 1, f = tf + 1; r <= 6 && f <= 6; r++, f++) attacks |= (1ULL << (r * 8 + f));
+		for (r = tr - 1, f = tf + 1; r >= 1 && f <= 6; r--, f++) attacks |= (1ULL << (r * 8 + f));
+		for (r = tr + 1, f = tf - 1; r <= 6 && f >= 1; r++, f--) attacks |= (1ULL << (r * 8 + f));
+		for (r = tr - 1, f = tf - 1; r >= 1 && f >= 1; r--, f--) attacks |= (1ULL << (r * 8 + f));		// store pattern
+		bishop_attack_masks[i] = attacks;
 	}
 	return;
 }

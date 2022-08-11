@@ -142,7 +142,7 @@ void Utility::generate_magic_attacks() {
 		for (int i = 0; i < occupancy_indices; i++) {
 			uint64_t occupancy = generate_occupancy_by_index(i, relevant_bits, current_mask);
 			int magic_index = (occupancy * magics::bishop_magics[square]) >> (64 - relevant_bits);
-			attacks::rook_attacks[square][magic_index] = attacks::compute_bishop_attacks(square, occupancy);
+			attacks::bishop_attacks[square][magic_index] = attacks::compute_bishop_attacks(square, occupancy);
 		}
 	}
 	return;

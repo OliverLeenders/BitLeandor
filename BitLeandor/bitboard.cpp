@@ -155,6 +155,91 @@ bool bitboard::is_square_attacked(int square, bool side_to_move) {
 	return 0;
 }
 
+void bitboard::print_board()
+{
+	unsigned long index = 0;
+	std::string pieces_str[64] = { };
+	_BitScanForward64(&index, this->kings[0]);
+	pieces_str[index] = "K";
+	_BitScanForward64(&index, this->kings[1]);
+	pieces_str[index] = "k";
+	uint64_t w_queens = this->queens[0];
+	while (w_queens != 0ULL) {
+		_BitScanForward64(&index, w_queens);
+		pieces_str[index] = "Q";
+		w_queens &= w_queens - 1;
+	}
+	uint64_t b_queens = this->queens[1];
+	while (b_queens != 0ULL) {
+		_BitScanForward64(&index, b_queens);
+		pieces_str[index] = "q";
+		b_queens &= b_queens - 1;
+	}
+	uint64_t w_rooks = this->rooks[0];
+	while (w_rooks != 0ULL) {
+		_BitScanForward64(&index, w_rooks);
+		pieces_str[index] = "R";
+		w_rooks &= w_rooks - 1;
+	}
+	uint64_t b_rooks = this->rooks[1];
+	while (b_rooks != 0ULL) {
+		_BitScanForward64(&index, b_rooks);
+		pieces_str[index] = "r";
+		b_rooks &= b_rooks - 1;
+	}
+	uint64_t w_bishops = this->bishops[0];
+	while (w_bishops != 0ULL) {
+		_BitScanForward64(&index, w_bishops);
+		pieces_str[index] = "B";
+		w_bishops &= w_bishops - 1;
+	}
+	uint64_t b_bishops = this->bishops[1];
+	while (b_bishops != 0ULL) {
+		_BitScanForward64(&index, b_bishops);
+		pieces_str[index] = "b";
+		b_bishops &= b_bishops - 1;
+	}
+	uint64_t w_knights = this->knights[0];
+	while (w_knights != 0ULL) {
+		_BitScanForward64(&index, w_knights);
+		pieces_str[index] = "N";
+		w_knights &= w_knights - 1;
+	}
+	uint64_t b_knights = this->knights[1];
+	while (b_knights != 0ULL) {
+		_BitScanForward64(&index, b_knights);
+		pieces_str[index] = "n";
+		b_knights &= b_knights - 1;
+	}
+	uint64_t w_pawns = this->pawns[0];
+	while (w_pawns != 0ULL) {
+		_BitScanForward64(&index, w_pawns);
+		pieces_str[index] = "P";
+		w_pawns &= w_pawns - 1;
+	}
+	uint64_t b_pawns = this->pawns[1];
+	while (b_pawns != 0ULL) {
+		_BitScanForward64(&index, b_pawns);
+		pieces_str[index] = "p";
+		b_pawns &= b_pawns - 1;
+	}
+	for (int i = 7; i >= 0; i--) {
+		for (int j = 0; j < 8; j++) {
+			if (pieces_str[i * 8 + j] != "") {
+				std::cout << pieces_str[i * 8 + j] << " ";
+			}
+			else {
+				std::cout << "  ";
+			}
+		}
+		std::cout << std::endl;
+	}
+	for (board_state s : game_history) {
+		std::cout << bit_move::to_string(s.last_move) << " ";
+	}
+	std::cout << std::endl;
+}
+
 
 
 bool bitboard::is_legal(bit_move* m)
@@ -208,10 +293,12 @@ void bitboard::make_move(bit_move* m)
 		case bitboard_util::pawn:
 			if (flags != bit_move::ep_capture) {
 				pawns[!side_to_move] ^= target_bit;
-				std::cout << "en_passant" << std::endl;
+			//	print_board();
 			} 
 			else {
 				pawns[!side_to_move] ^= (side_to_move) ? target_bit >> 8 : target_bit << 8;
+				std::cout << "en_passant" << std::endl;
+				print_board();
 			}
 			break;
 		case bitboard_util::knight:
@@ -342,9 +429,7 @@ void bitboard::make_move(bit_move* m)
 	unsigned long popcnt = 0;
 	if (__popcnt64(pieces[2]) > 32) {
 		std::cout << bit_move::to_string(*m) << " error" << std::endl;
-		bitboard_util::print_bitboard(pieces[2]);
-		bitboard_util::print_bitboard(pawns[0]);
-		bitboard_util::print_bitboard(pawns[1]);
+		print_board();
 	}
 }
 
@@ -439,7 +524,7 @@ void bitboard::unmake_move()
 	pieces[2] = pieces[0] | pieces[1];
 	if (__popcnt64(pieces[2]) > 32) {
 		std::cout << bit_move::to_string(prev_move) << " error" << std::endl;
-		bitboard_util::print_bitboard(pieces[2]);
+		print_board();
 	}
 }
 

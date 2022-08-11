@@ -24,10 +24,13 @@ public:
 	static void generate_rook_qmoves(bitboard* b, movelist* l);
 	static void generate_rook_cmoves(bitboard* b, movelist* l);
 
+	static void generate_queen_qmoves(bitboard* b, movelist* l);
+	static void generate_queen_cmoves(bitboard* b, movelist* l);
+
 	static void generate_king_qmoves(bitboard* b, movelist* l);
 	static void generate_king_cmoves(bitboard* b, movelist* l);
 
-	static void generate_all_captures(bitboard* b, movelist* l );
+	static void generate_all_captures(bitboard* b, movelist* l);
 	static void generate_all_quiet_moves(bitboard* b, movelist* l);
 
 	static void generate_all_pseudo_legal_moves(bitboard* b, movelist* l);
