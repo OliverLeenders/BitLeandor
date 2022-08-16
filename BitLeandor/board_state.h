@@ -10,5 +10,5 @@ class board_state {
 	char castling_rights = 0;
 	char en_passant_target_square = 0;
 	int fifty_move_counter = 0;
-	bit_move last_move = *(new bit_move());
+	bit_move last_move = bit_move();
 };

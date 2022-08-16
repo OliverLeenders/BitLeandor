@@ -1,6 +1,4 @@
 #include "perft.h"
-#include "movelist.h"
-#include "movegen.h"
 
 uint64_t perft::run_perft(bitboard* b, int depth)
 {
@@ -16,7 +14,7 @@ uint64_t perft::run_perft(bitboard* b, int depth)
 		for (int i = 0; i < l.size; i++)
 		{
 			bit_move m = l.moves[i];
-			if (b->is_legal(&m))
+			if (b->is_legal<true>(&m))
 			{
 				b->make_move(&m);
 				//std::cout << bit_move::to_string(m) << std::endl;
@@ -44,9 +42,9 @@ uint64_t perft::run_perft_console(bitboard* b, int depth)
 		for (int i = 0; i < l.size; i++)
 		{
 			m = l.moves[i];
-			if (b->is_legal(&m))
+			if (b->is_legal<true>(&m))
 			{
-				std::cout << bit_move::to_string(m) + "(" << (int)m.get_flags() << "): ";
+				std::cout << i << ".\t" << bit_move::to_string(m) + " (" << (int)m.get_flags() << "): ";
 				b->make_move(&m);
 				uint64_t curr_nodes = run_perft(b, depth - 1);
 				nodes += curr_nodes;
@@ -77,7 +75,7 @@ uint64_t perft::run_two_level_perft(bitboard* b, int depth_extensive, int depth,
 		for (int i = 0; i < l.size; i++)
 		{
 			bit_move m = l.moves[i];
-			if (b->is_legal(&m))
+			if (b->is_legal<true>(&m))
 			{
 				std::string indent = "\n";
 				for (int j = 0; j < indentation; j++)

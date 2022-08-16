@@ -109,14 +109,16 @@ void bitboard::pos_from_fen(std::string fen) {
 		}
 	}
 
+	//std::cout << (int) castling_rights << std::endl;
+
 	std::string fen_ep_target_square = fen_split[3];
 	if (fen_ep_target_square == "-") {
 		this->ep_target_square = -1;
 	}
 	else {
-		this->ep_target_square = 8 * char_to_rank(fen_ep_target_square.at(0)) + char_to_file(fen_ep_target_square.at(1));
+		this->ep_target_square = 8 * char_to_rank(fen_ep_target_square.at(1)) + char_to_file(fen_ep_target_square.at(0));
 	}
-
+	std::cout << "ep_target_square: " << this->ep_target_square << std::endl;
 	std::string fen_fifty_move_clock = fen_split[4];
 
 	return;
@@ -238,37 +240,10 @@ void bitboard::print_board()
 		std::cout << bit_move::to_string(s.last_move) << " ";
 	}
 	std::cout << std::endl;
+	std::cout << "ep-target-square: " << ep_target_square << std::endl;
 }
 
 
-
-bool bitboard::is_legal(bit_move* m)
-{
-	uint8_t flags = m->get_flags();
-	uint16_t origin = m->get_origin();
-	uint16_t target = m->get_target();
-	uint8_t piece_type = m->get_piece_type();
-	uint8_t captured_type = m->get_captured_type();
-	if (flags == bit_move::queenside_castle) {
-		if (is_square_attacked(origin, !side_to_move) || is_square_attacked(origin - 1, !side_to_move) || is_square_attacked(origin - 2, !side_to_move)) {
-			return false;
-		}
-	}
-	else if (flags == bit_move::kingside_castle) {
-		if (is_square_attacked(origin, !side_to_move) || is_square_attacked(origin + 1, !side_to_move) || is_square_attacked(origin + 2, !side_to_move)) {
-			return false;
-		}
-	}
-	make_move(m);
-	unsigned long king_pos;
-	_BitScanForward64(&king_pos, kings[!side_to_move]);
-	if (is_square_attacked(king_pos, side_to_move)) {
-		unmake_move();
-		return false;
-	}
-	unmake_move();
-	return true;
-}
 
 void bitboard::make_move(bit_move* m)
 {
@@ -293,12 +268,14 @@ void bitboard::make_move(bit_move* m)
 		case bitboard_util::pawn:
 			if (flags != bit_move::ep_capture) {
 				pawns[!side_to_move] ^= target_bit;
-			//	print_board();
-			} 
+				//	print_board();
+			}
 			else {
-				pawns[!side_to_move] ^= (side_to_move) ? target_bit >> 8 : target_bit << 8;
-				std::cout << "en_passant" << std::endl;
-				print_board();
+				// std::cout << "\nen_passant" << std::endl;
+				// print_board();
+				pawns[!side_to_move] ^= (side_to_move) ? target_bit << 8: target_bit >> 8;
+				//print_board();
+				// std::cout << ep_target_square << std::endl;
 			}
 			break;
 		case bitboard_util::knight:
@@ -333,7 +310,7 @@ void bitboard::make_move(bit_move* m)
 		}
 	}
 	if (flags == bit_move::double_pawn_push) {
-		this->ep_target_square = target - ((side_to_move) ? 8 : -8);
+		this->ep_target_square = target - ((side_to_move) ? -8 : 8);
 		this->fifty_move_rule_counter = 0;
 	}
 	else {
@@ -341,7 +318,7 @@ void bitboard::make_move(bit_move* m)
 	}
 	if (piece_type == bitboard_util::pawn && flags < 8) { // if is pawn move and not promotion
 		// std::cout << "pawn move" << std::endl;
-		
+
 		pawns[side_to_move] ^= origin_bit;
 		pawns[side_to_move] ^= target_bit;
 		this->fifty_move_rule_counter = 0;
@@ -352,16 +329,16 @@ void bitboard::make_move(bit_move* m)
 	else if (piece_type == bitboard_util::pawn && flags >= 8) { // if is promotion
 		this->fifty_move_rule_counter = 0;
 		pawns[side_to_move] ^= origin_bit;
-		if (flags == bitboard_util::queen) {
+		if (flags == bit_move::queen_promotion || flags == bit_move::queen_capture_promotion) {
 			queens[side_to_move] ^= target_bit;
 		}
-		else if (flags == bitboard_util::rook) {
+		else if (flags == bit_move::rook_promotion || flags == bit_move::rook_capture_promotion) {
 			rooks[side_to_move] ^= target_bit;
 		}
-		else if (flags == bitboard_util::bishop) {
+		else if (flags == bit_move::bishop_promotion || flags == bit_move::bishop_capture_promotion) {
 			bishops[side_to_move] ^= target_bit;
 		}
-		else if (flags == bitboard_util::knight) {
+		else if (flags == bit_move::knight_promotion || flags == bit_move::knight_capture_promotion) {
 			knights[side_to_move] ^= target_bit;
 		}
 	}
@@ -428,7 +405,7 @@ void bitboard::make_move(bit_move* m)
 	pieces[2] = pieces[0] | pieces[1];
 	unsigned long popcnt = 0;
 	if (__popcnt64(pieces[2]) > 32) {
-		std::cout << bit_move::to_string(*m) << " error" << std::endl;
+		std::cout << bit_move::to_string(*m) << " (" << (int)m->get_flags() << ") error" << std::endl;
 		print_board();
 	}
 }
@@ -443,6 +420,7 @@ void bitboard::unmake_move()
 	this->side_to_move = !side_to_move;
 	this->fifty_move_rule_counter = prev_board_state.fifty_move_counter;
 	this->castling_rights = prev_board_state.castling_rights;
+	this->ep_target_square = prev_board_state.en_passant_target_square;
 	// restore captured piece on the board representation
 	bit_move prev_move = prev_board_state.last_move;
 	int origin = prev_move.get_origin();
@@ -514,17 +492,51 @@ void bitboard::unmake_move()
 		knights[side_to_move] ^= origin_bit;
 		knights[side_to_move] ^= target_bit;
 	}
-	else if (piece_type == bitboard_util::pawn) {
+	else if (piece_type == bitboard_util::pawn && flags < 8) {
 		pawns[side_to_move] ^= origin_bit;
 		pawns[side_to_move] ^= target_bit;
-	} 
+	}
+	else if (piece_type == bitboard_util::pawn && flags >= 8) {
+		uint8_t promotion_type = flags % 4;
+		pawns[side_to_move] ^= origin_bit;
+		switch (flags)
+		{
+		case bit_move::knight_promotion:
+			knights[side_to_move] ^= target_bit;
+			break;
+		case bit_move::bishop_promotion:
+			bishops[side_to_move] ^= target_bit;
+			break;
+		case bit_move::rook_promotion:
+			rooks[side_to_move] ^= target_bit;
+			break;
+		case bit_move::queen_promotion:
+			queens[side_to_move] ^= target_bit;
+			break;
+		case bit_move::knight_capture_promotion:
+			knights[side_to_move] ^= target_bit;
+			break;
+		case bit_move::bishop_capture_promotion:
+			bishops[side_to_move] ^= target_bit;
+			break;
+		case bit_move::rook_capture_promotion:
+			rooks[side_to_move] ^= target_bit;
+			break;
+		case bit_move::queen_capture_promotion:
+			queens[side_to_move] ^= target_bit;
+			break;
+		default:
+			break;
+		}
+	}
 
 	pieces[0] = pawns[0] | knights[0] | bishops[0] | rooks[0] | queens[0] | kings[0];
 	pieces[1] = pawns[1] | knights[1] | bishops[1] | rooks[1] | queens[1] | kings[1];
 	pieces[2] = pieces[0] | pieces[1];
 	if (__popcnt64(pieces[2]) > 32) {
 		std::cout << bit_move::to_string(prev_move) << " error" << std::endl;
-		print_board();
+		bitboard_util::print_bitboard(pawns[0]);
+		bitboard_util::print_bitboard(pawns[1]);
 	}
 }
 
@@ -532,22 +544,22 @@ uint8_t bitboard::piece_type_from_index(unsigned long i)
 {
 	uint64_t mask = (1ULL << i);
 	bool allegiance = (mask & pieces[0]) == 0;
-	if ((pawns[allegiance] & mask) != 1ULL) {
+	if ((pawns[allegiance] & mask) != 0ULL) {
 		return bitboard_util::pawn;
 	}
-	if ((knights[allegiance] & mask) != 1ULL) {
+	if ((knights[allegiance] & mask) != 0ULL) {
 		return bitboard_util::knight;
 	}
-	if ((bishops[allegiance] & mask) != 1ULL) {
+	if ((bishops[allegiance] & mask) != 0ULL) {
 		return bitboard_util::bishop;
 	}
-	if ((rooks[allegiance] & mask) != 1ULL) {
+	if ((rooks[allegiance] & mask) != 0ULL) {
 		return bitboard_util::rook;
 	}
-	if ((queens[allegiance] & mask) != 1ULL) {
+	if ((queens[allegiance] & mask) != 0ULL) {
 		return bitboard_util::queen;
 	}
-	if ((kings[allegiance] & mask) != 1ULL) {
+	if ((kings[allegiance] & mask) != 0ULL) {
 		return bitboard_util::king;
 	}
 	return bitboard_util::empty;

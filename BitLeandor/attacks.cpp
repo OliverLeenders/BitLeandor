@@ -92,7 +92,7 @@ void attacks::init_knight_attacks() {
 	return;
 }
 void attacks::init_pawn_attacks() {
-	for (int i = 8; i < 56; i++) {
+	for (int i = 0; i < 64; i++) {
 		uint64_t pattern_w = 0ULL;
 		uint64_t pattern_b = 0ULL;
 		if (i % 8 != 0) {

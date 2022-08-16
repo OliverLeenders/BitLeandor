@@ -1,6 +1,8 @@
 #pragma once
 #include <cstdint>
 #include "bitboard.h"
+#include "movelist.h"
+#include "movegen.h"
 class perft
 {
 public:
