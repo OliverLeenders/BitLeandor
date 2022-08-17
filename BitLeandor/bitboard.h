@@ -11,14 +11,9 @@ class bitboard
 {
 public:
 	bitboard();
-	uint64_t pawns[2] = { 0 };
-	uint64_t knights[2] = { 0 };
-	uint64_t bishops[2] = { 0 };
-	uint64_t rooks[2] = { 0 };
-	uint64_t queens[2] = { 0 };
-	uint64_t kings[2] = { 0 };
 
-	//uint16_t bbs[6][2] = { 0 };
+	uint64_t bbs[6][2] = { {0, 0}, {0, 0}, {0, 0} , {0, 0} , {0, 0}, {0, 0} };
+	int types[64] = { 0 };
 
 	enum {
 		WHITE = 0,
@@ -89,7 +84,7 @@ public:
 		}
 		make_move(m);
 		unsigned long king_pos;
-		_BitScanForward64(&king_pos, kings[!side_to_move]);
+		_BitScanForward64(&king_pos, bbs[KING][!side_to_move]);
 		if (is_square_attacked(king_pos, side_to_move)) {
 			unmake_move();
 			return false;

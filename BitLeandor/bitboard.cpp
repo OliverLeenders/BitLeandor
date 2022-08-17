@@ -31,40 +31,40 @@ void bitboard::pos_from_fen(std::string fen) {
 				switch (c)
 				{
 				case 'P':
-					this->pawns[0] |= bitboard_util::set_bit(board_index);
+					this->bbs[PAWN][0] |= bitboard_util::set_bit(board_index);
 					break;
 				case 'p':
-					this->pawns[1] |= bitboard_util::set_bit(board_index);
+					this->bbs[PAWN][1] |= bitboard_util::set_bit(board_index);
 					break;
 				case 'N':
-					this->knights[0] |= bitboard_util::set_bit(board_index);
+					this->bbs[KNIGHT][0] |= bitboard_util::set_bit(board_index);
 					break;
 				case 'n':
-					this->knights[1] |= bitboard_util::set_bit(board_index);
+					this->bbs[KNIGHT][1] |= bitboard_util::set_bit(board_index);
 					break;
 				case 'B':
-					this->bishops[0] |= bitboard_util::set_bit(board_index);
+					this->bbs[BISHOP][0] |= bitboard_util::set_bit(board_index);
 					break;
 				case 'b':
-					this->bishops[1] |= bitboard_util::set_bit(board_index);
+					this->bbs[BISHOP][1] |= bitboard_util::set_bit(board_index);
 					break;
 				case 'R':
-					this->rooks[0] |= bitboard_util::set_bit(board_index);
+					this->bbs[ROOK][0] |= bitboard_util::set_bit(board_index);
 					break;
 				case 'r':
-					this->rooks[1] |= bitboard_util::set_bit(board_index);
+					this->bbs[ROOK][1] |= bitboard_util::set_bit(board_index);
 					break;
 				case 'Q':
-					this->queens[0] |= bitboard_util::set_bit(board_index);
+					this->bbs[QUEEN][0] |= bitboard_util::set_bit(board_index);
 					break;
 				case 'q':
-					this->queens[1] |= bitboard_util::set_bit(board_index);
+					this->bbs[QUEEN][1] |= bitboard_util::set_bit(board_index);
 					break;
 				case 'K':
-					this->kings[0] |= bitboard_util::set_bit(board_index);
+					this->bbs[KING][0] |= bitboard_util::set_bit(board_index);
 					break;
 				case 'k':
-					this->kings[1] |= bitboard_util::set_bit(board_index);
+					this->bbs[KING][1] |= bitboard_util::set_bit(board_index);
 					break;
 				default:
 					std::cout << "An error occured while reading the fen -- illegal position string. char at fault: '" << c << "'." << std::endl;
@@ -76,8 +76,8 @@ void bitboard::pos_from_fen(std::string fen) {
 		fen_pos_index++;
 	}
 
-	this->pieces[0] = this->pawns[0] | this->knights[0] | this->bishops[0] | this->rooks[0] | this->queens[0] | this->kings[0];
-	this->pieces[1] = this->pawns[1] | this->knights[1] | this->bishops[1] | this->rooks[1] | this->queens[1] | this->kings[1];
+	this->pieces[0] = this->bbs[PAWN][0] | this->bbs[KNIGHT][0] | this->bbs[BISHOP][0] | this->bbs[ROOK][0] | this->bbs[QUEEN][0] | this->bbs[KING][0];
+	this->pieces[1] = this->bbs[PAWN][1] | this->bbs[KNIGHT][1] | this->bbs[BISHOP][1] | this->bbs[ROOK][1] | this->bbs[QUEEN][1] | this->bbs[KING][1];
 	this->pieces[2] = this->pieces[0] | this->pieces[1];
 
 	std::string fen_side_to_move = fen_split[1];
@@ -139,19 +139,19 @@ int bitboard::char_to_file(char c) {
 /// <param name="side_to_move"></param>
 /// <returns></returns>
 bool bitboard::is_square_attacked(int square, bool side_to_move) {
-	if (attacks::pawn_attacks[!side_to_move][square] & pawns[side_to_move]) {
+	if (attacks::pawn_attacks[!side_to_move][square] & bbs[PAWN][side_to_move]) {
 		return 1;
 	}
-	if (attacks::knight_attacks[square] & knights[side_to_move]) {
+	if (attacks::knight_attacks[square] & bbs[KNIGHT][side_to_move]) {
 		return 1;
 	}
-	if (attacks::get_bishop_attacks(square, pieces[0] | pieces[1]) & (bishops[side_to_move] | queens[side_to_move])) {
+	if (attacks::get_bishop_attacks(square, pieces[0] | pieces[1]) & (bbs[BISHOP][side_to_move] | bbs[QUEEN][side_to_move])) {
 		return 1;
 	}
-	if (attacks::get_rook_attacks(square, pieces[0] | pieces[1]) & (rooks[side_to_move] | queens[side_to_move])) {
+	if (attacks::get_rook_attacks(square, pieces[0] | pieces[1]) & (bbs[ROOK][side_to_move] | bbs[QUEEN][side_to_move])) {
 		return 1;
 	}
-	if (attacks::king_attacks[square] & kings[side_to_move]) {
+	if (attacks::king_attacks[square] & bbs[KING][side_to_move]) {
 		return 1;
 	}
 	return 0;
@@ -161,65 +161,65 @@ void bitboard::print_board()
 {
 	unsigned long index = 0;
 	std::string pieces_str[64] = { };
-	_BitScanForward64(&index, this->kings[0]);
+	_BitScanForward64(&index, this->bbs[KING][0]);
 	pieces_str[index] = "K";
-	_BitScanForward64(&index, this->kings[1]);
+	_BitScanForward64(&index, this->bbs[KING][1]);
 	pieces_str[index] = "k";
-	uint64_t w_queens = this->queens[0];
+	uint64_t w_queens = this->bbs[QUEEN][0];
 	while (w_queens != 0ULL) {
 		_BitScanForward64(&index, w_queens);
 		pieces_str[index] = "Q";
 		w_queens &= w_queens - 1;
 	}
-	uint64_t b_queens = this->queens[1];
+	uint64_t b_queens = this->bbs[QUEEN][1];
 	while (b_queens != 0ULL) {
 		_BitScanForward64(&index, b_queens);
 		pieces_str[index] = "q";
 		b_queens &= b_queens - 1;
 	}
-	uint64_t w_rooks = this->rooks[0];
+	uint64_t w_rooks = this->bbs[ROOK][0];
 	while (w_rooks != 0ULL) {
 		_BitScanForward64(&index, w_rooks);
 		pieces_str[index] = "R";
 		w_rooks &= w_rooks - 1;
 	}
-	uint64_t b_rooks = this->rooks[1];
+	uint64_t b_rooks = this->bbs[ROOK][1];
 	while (b_rooks != 0ULL) {
 		_BitScanForward64(&index, b_rooks);
 		pieces_str[index] = "r";
 		b_rooks &= b_rooks - 1;
 	}
-	uint64_t w_bishops = this->bishops[0];
+	uint64_t w_bishops = this->bbs[BISHOP][0];
 	while (w_bishops != 0ULL) {
 		_BitScanForward64(&index, w_bishops);
 		pieces_str[index] = "B";
 		w_bishops &= w_bishops - 1;
 	}
-	uint64_t b_bishops = this->bishops[1];
+	uint64_t b_bishops = this->bbs[BISHOP][1];
 	while (b_bishops != 0ULL) {
 		_BitScanForward64(&index, b_bishops);
 		pieces_str[index] = "b";
 		b_bishops &= b_bishops - 1;
 	}
-	uint64_t w_knights = this->knights[0];
+	uint64_t w_knights = this->bbs[KNIGHT][0];
 	while (w_knights != 0ULL) {
 		_BitScanForward64(&index, w_knights);
 		pieces_str[index] = "N";
 		w_knights &= w_knights - 1;
 	}
-	uint64_t b_knights = this->knights[1];
+	uint64_t b_knights = this->bbs[KNIGHT][1];
 	while (b_knights != 0ULL) {
 		_BitScanForward64(&index, b_knights);
 		pieces_str[index] = "n";
 		b_knights &= b_knights - 1;
 	}
-	uint64_t w_pawns = this->pawns[0];
+	uint64_t w_pawns = this->bbs[PAWN][0];
 	while (w_pawns != 0ULL) {
 		_BitScanForward64(&index, w_pawns);
 		pieces_str[index] = "P";
 		w_pawns &= w_pawns - 1;
 	}
-	uint64_t b_pawns = this->pawns[1];
+	uint64_t b_pawns = this->bbs[PAWN][1];
 	while (b_pawns != 0ULL) {
 		_BitScanForward64(&index, b_pawns);
 		pieces_str[index] = "p";
@@ -267,25 +267,25 @@ void bitboard::make_move(bit_move* m)
 		{
 		case bitboard_util::pawn:
 			if (flags != bit_move::ep_capture) {
-				pawns[!side_to_move] ^= target_bit;
+				bbs[PAWN][!side_to_move] ^= target_bit;
 				//	print_board();
 			}
 			else {
 				// std::cout << "\nen_passant" << std::endl;
 				// print_board();
-				pawns[!side_to_move] ^= (side_to_move) ? target_bit << 8: target_bit >> 8;
+				bbs[PAWN][!side_to_move] ^= (side_to_move) ? target_bit << 8: target_bit >> 8;
 				//print_board();
 				// std::cout << ep_target_square << std::endl;
 			}
 			break;
 		case bitboard_util::knight:
-			knights[!side_to_move] ^= target_bit;
+			bbs[KNIGHT][!side_to_move] ^= target_bit;
 			break;
 		case bitboard_util::bishop:
-			bishops[!side_to_move] ^= target_bit;
+			bbs[BISHOP][!side_to_move] ^= target_bit;
 			break;
 		case bitboard_util::rook:
-			rooks[!side_to_move] ^= target_bit;
+			bbs[ROOK][!side_to_move] ^= target_bit;
 			if (target == 0) {
 				this->castling_rights &= ~w_queenside;
 			}
@@ -300,10 +300,10 @@ void bitboard::make_move(bit_move* m)
 			}
 			break;
 		case bitboard_util::queen:
-			queens[!side_to_move] ^= target_bit;
+			bbs[QUEEN][!side_to_move] ^= target_bit;
 			break;
 		case bitboard_util::king:
-			kings[!side_to_move] ^= target_bit;
+			bbs[KING][!side_to_move] ^= target_bit;
 			break;
 		default:
 			break;
@@ -319,48 +319,48 @@ void bitboard::make_move(bit_move* m)
 	if (piece_type == bitboard_util::pawn && flags < 8) { // if is pawn move and not promotion
 		// std::cout << "pawn move" << std::endl;
 
-		pawns[side_to_move] ^= origin_bit;
-		pawns[side_to_move] ^= target_bit;
+		bbs[PAWN][side_to_move] ^= origin_bit;
+		bbs[PAWN][side_to_move] ^= target_bit;
 		this->fifty_move_rule_counter = 0;
-		//bitboard_util::print_bitboard(pawns[side_to_move]);
+		//bitboard_util::print_bitboard(bbs[PAWN][side_to_move]);
 		//bitboard_util::print_bitboard(origin_bit);
 		//bitboard_util::print_bitboard(target_bit);
 	}
 	else if (piece_type == bitboard_util::pawn && flags >= 8) { // if is promotion
 		this->fifty_move_rule_counter = 0;
-		pawns[side_to_move] ^= origin_bit;
+		bbs[PAWN][side_to_move] ^= origin_bit;
 		if (flags == bit_move::queen_promotion || flags == bit_move::queen_capture_promotion) {
-			queens[side_to_move] ^= target_bit;
+			bbs[QUEEN][side_to_move] ^= target_bit;
 		}
 		else if (flags == bit_move::rook_promotion || flags == bit_move::rook_capture_promotion) {
-			rooks[side_to_move] ^= target_bit;
+			bbs[ROOK][side_to_move] ^= target_bit;
 		}
 		else if (flags == bit_move::bishop_promotion || flags == bit_move::bishop_capture_promotion) {
-			bishops[side_to_move] ^= target_bit;
+			bbs[BISHOP][side_to_move] ^= target_bit;
 		}
 		else if (flags == bit_move::knight_promotion || flags == bit_move::knight_capture_promotion) {
-			knights[side_to_move] ^= target_bit;
+			bbs[KNIGHT][side_to_move] ^= target_bit;
 		}
 	}
 	else if (piece_type == bitboard_util::king && flags == bit_move::kingside_castle) { // if is castle
-		kings[side_to_move] ^= origin_bit;
-		kings[side_to_move] ^= target_bit;
-		rooks[side_to_move] ^= bitboard_util::set_bit(origin + 1);
-		rooks[side_to_move] ^= bitboard_util::set_bit(origin + 3);
+		bbs[KING][side_to_move] ^= origin_bit;
+		bbs[KING][side_to_move] ^= target_bit;
+		bbs[ROOK][side_to_move] ^= bitboard_util::set_bit(origin + 1);
+		bbs[ROOK][side_to_move] ^= bitboard_util::set_bit(origin + 3);
 		// update castling rights
 		this->castling_rights &= ~((side_to_move) ? b_kingside | b_queenside : w_kingside | w_queenside);
 	}
 	else if (piece_type == bitboard_util::king && flags == bit_move::queenside_castle) { // if is castle
-		kings[side_to_move] ^= origin_bit;
-		kings[side_to_move] ^= target_bit;
-		rooks[side_to_move] ^= bitboard_util::set_bit(origin - 1);
-		rooks[side_to_move] ^= bitboard_util::set_bit(origin - 4);
+		bbs[KING][side_to_move] ^= origin_bit;
+		bbs[KING][side_to_move] ^= target_bit;
+		bbs[ROOK][side_to_move] ^= bitboard_util::set_bit(origin - 1);
+		bbs[ROOK][side_to_move] ^= bitboard_util::set_bit(origin - 4);
 		// update castling rights
 		this->castling_rights &= ~((side_to_move) ? b_queenside | b_kingside : w_queenside | w_kingside);
 	}
 	else if (piece_type == bitboard_util::king) { // if is king move
-		kings[side_to_move] ^= origin_bit;
-		kings[side_to_move] ^= target_bit;
+		bbs[KING][side_to_move] ^= origin_bit;
+		bbs[KING][side_to_move] ^= target_bit;
 		// if king has not moved update castling rights
 		if (origin == 4) {
 			castling_rights &= ~(w_kingside | w_queenside);
@@ -370,12 +370,12 @@ void bitboard::make_move(bit_move* m)
 		}
 	}
 	else if (piece_type == bitboard_util::queen) { // if is queen move
-		queens[side_to_move] ^= origin_bit;
-		queens[side_to_move] ^= target_bit;
+		bbs[QUEEN][side_to_move] ^= origin_bit;
+		bbs[QUEEN][side_to_move] ^= target_bit;
 	}
 	else if (piece_type == bitboard_util::rook) { // if is rook move
-		rooks[side_to_move] ^= origin_bit;
-		rooks[side_to_move] ^= target_bit;
+		bbs[ROOK][side_to_move] ^= origin_bit;
+		bbs[ROOK][side_to_move] ^= target_bit;
 		// if rook has not moved update castling rights
 		if (origin == 7) {
 			this->castling_rights &= ~w_kingside;
@@ -391,17 +391,17 @@ void bitboard::make_move(bit_move* m)
 		}
 	}
 	else if (piece_type == bitboard_util::bishop) { // if is bishop move
-		bishops[side_to_move] ^= origin_bit;
-		bishops[side_to_move] ^= target_bit;
+		bbs[BISHOP][side_to_move] ^= origin_bit;
+		bbs[BISHOP][side_to_move] ^= target_bit;
 	}
 	else if (piece_type == bitboard_util::knight) { // if is knight move
-		knights[side_to_move] ^= origin_bit;
-		knights[side_to_move] ^= target_bit;
+		bbs[KNIGHT][side_to_move] ^= origin_bit;
+		bbs[KNIGHT][side_to_move] ^= target_bit;
 	}
 	this->side_to_move = !side_to_move;
 	full_move_clock += side_to_move;
-	pieces[0] = pawns[0] | knights[0] | bishops[0] | rooks[0] | queens[0] | kings[0];
-	pieces[1] = pawns[1] | knights[1] | bishops[1] | rooks[1] | queens[1] | kings[1];
+	pieces[0] = bbs[PAWN][0] | bbs[KNIGHT][0] | bbs[BISHOP][0] | bbs[ROOK][0] | bbs[QUEEN][0] | bbs[KING][0];
+	pieces[1] = bbs[PAWN][1] | bbs[KNIGHT][1] | bbs[BISHOP][1] | bbs[ROOK][1] | bbs[QUEEN][1] | bbs[KING][1];
 	pieces[2] = pieces[0] | pieces[1];
 	unsigned long popcnt = 0;
 	if (__popcnt64(pieces[2]) > 32) {
@@ -437,23 +437,23 @@ void bitboard::unmake_move()
 		{
 		case bitboard_util::pawn:
 			if (flags != bit_move::ep_capture) {
-				pawns[!side_to_move] ^= target_bit;
+				bbs[PAWN][!side_to_move] ^= target_bit;
 			}
 			else {
-				pawns[!side_to_move] ^= (side_to_move) ? (target_bit << 8) : (target_bit >> 8);
+				bbs[PAWN][!side_to_move] ^= (side_to_move) ? (target_bit << 8) : (target_bit >> 8);
 			}
 			break;
 		case bitboard_util::knight:
-			knights[!side_to_move] ^= target_bit;
+			bbs[KNIGHT][!side_to_move] ^= target_bit;
 			break;
 		case bitboard_util::bishop:
-			bishops[!side_to_move] ^= target_bit;
+			bbs[BISHOP][!side_to_move] ^= target_bit;
 			break;
 		case bitboard_util::rook:
-			rooks[!side_to_move] ^= target_bit;
+			bbs[ROOK][!side_to_move] ^= target_bit;
 			break;
 		case bitboard_util::queen:
-			queens[!side_to_move] ^= target_bit;
+			bbs[QUEEN][!side_to_move] ^= target_bit;
 			break;
 		default:
 			break;
@@ -461,82 +461,82 @@ void bitboard::unmake_move()
 	}
 
 	if (flags == bit_move::kingside_castle) {
-		kings[side_to_move] ^= origin_bit;
-		kings[side_to_move] ^= target_bit;
-		rooks[side_to_move] ^= bitboard_util::set_bit(origin + 1);
-		rooks[side_to_move] ^= bitboard_util::set_bit(origin + 3);
+		bbs[KING][side_to_move] ^= origin_bit;
+		bbs[KING][side_to_move] ^= target_bit;
+		bbs[ROOK][side_to_move] ^= bitboard_util::set_bit(origin + 1);
+		bbs[ROOK][side_to_move] ^= bitboard_util::set_bit(origin + 3);
 	}
 	else if (flags == bit_move::queenside_castle) {
-		kings[side_to_move] ^= origin_bit;
-		kings[side_to_move] ^= target_bit;
-		rooks[side_to_move] ^= bitboard_util::set_bit(origin - 1);
-		rooks[side_to_move] ^= bitboard_util::set_bit(origin - 4);
+		bbs[KING][side_to_move] ^= origin_bit;
+		bbs[KING][side_to_move] ^= target_bit;
+		bbs[ROOK][side_to_move] ^= bitboard_util::set_bit(origin - 1);
+		bbs[ROOK][side_to_move] ^= bitboard_util::set_bit(origin - 4);
 	}
 	else if (piece_type == bitboard_util::king) {
-		kings[side_to_move] ^= origin_bit;
-		kings[side_to_move] ^= target_bit;
+		bbs[KING][side_to_move] ^= origin_bit;
+		bbs[KING][side_to_move] ^= target_bit;
 	}
 	else if (piece_type == bitboard_util::queen) {
-		queens[side_to_move] ^= origin_bit;
-		queens[side_to_move] ^= target_bit;
+		bbs[QUEEN][side_to_move] ^= origin_bit;
+		bbs[QUEEN][side_to_move] ^= target_bit;
 	}
 	else if (piece_type == bitboard_util::rook) {
-		rooks[side_to_move] ^= origin_bit;
-		rooks[side_to_move] ^= target_bit;
+		bbs[ROOK][side_to_move] ^= origin_bit;
+		bbs[ROOK][side_to_move] ^= target_bit;
 	}
 	else if (piece_type == bitboard_util::bishop) {
-		bishops[side_to_move] ^= origin_bit;
-		bishops[side_to_move] ^= target_bit;
+		bbs[BISHOP][side_to_move] ^= origin_bit;
+		bbs[BISHOP][side_to_move] ^= target_bit;
 	}
 	else if (piece_type == bitboard_util::knight) {
-		knights[side_to_move] ^= origin_bit;
-		knights[side_to_move] ^= target_bit;
+		bbs[KNIGHT][side_to_move] ^= origin_bit;
+		bbs[KNIGHT][side_to_move] ^= target_bit;
 	}
 	else if (piece_type == bitboard_util::pawn && flags < 8) {
-		pawns[side_to_move] ^= origin_bit;
-		pawns[side_to_move] ^= target_bit;
+		bbs[PAWN][side_to_move] ^= origin_bit;
+		bbs[PAWN][side_to_move] ^= target_bit;
 	}
 	else if (piece_type == bitboard_util::pawn && flags >= 8) {
 		uint8_t promotion_type = flags % 4;
-		pawns[side_to_move] ^= origin_bit;
+		bbs[PAWN][side_to_move] ^= origin_bit;
 		switch (flags)
 		{
 		case bit_move::knight_promotion:
-			knights[side_to_move] ^= target_bit;
+			bbs[KNIGHT][side_to_move] ^= target_bit;
 			break;
 		case bit_move::bishop_promotion:
-			bishops[side_to_move] ^= target_bit;
+			bbs[BISHOP][side_to_move] ^= target_bit;
 			break;
 		case bit_move::rook_promotion:
-			rooks[side_to_move] ^= target_bit;
+			bbs[ROOK][side_to_move] ^= target_bit;
 			break;
 		case bit_move::queen_promotion:
-			queens[side_to_move] ^= target_bit;
+			bbs[QUEEN][side_to_move] ^= target_bit;
 			break;
 		case bit_move::knight_capture_promotion:
-			knights[side_to_move] ^= target_bit;
+			bbs[KNIGHT][side_to_move] ^= target_bit;
 			break;
 		case bit_move::bishop_capture_promotion:
-			bishops[side_to_move] ^= target_bit;
+			bbs[BISHOP][side_to_move] ^= target_bit;
 			break;
 		case bit_move::rook_capture_promotion:
-			rooks[side_to_move] ^= target_bit;
+			bbs[ROOK][side_to_move] ^= target_bit;
 			break;
 		case bit_move::queen_capture_promotion:
-			queens[side_to_move] ^= target_bit;
+			bbs[QUEEN][side_to_move] ^= target_bit;
 			break;
 		default:
 			break;
 		}
 	}
 
-	pieces[0] = pawns[0] | knights[0] | bishops[0] | rooks[0] | queens[0] | kings[0];
-	pieces[1] = pawns[1] | knights[1] | bishops[1] | rooks[1] | queens[1] | kings[1];
+	pieces[0] = bbs[PAWN][0] | bbs[KNIGHT][0] | bbs[BISHOP][0] | bbs[ROOK][0] | bbs[QUEEN][0] | bbs[KING][0];
+	pieces[1] = bbs[PAWN][1] | bbs[KNIGHT][1] | bbs[BISHOP][1] | bbs[ROOK][1] | bbs[QUEEN][1] | bbs[KING][1];
 	pieces[2] = pieces[0] | pieces[1];
 	if (__popcnt64(pieces[2]) > 32) {
 		std::cout << bit_move::to_string(prev_move) << " error" << std::endl;
-		bitboard_util::print_bitboard(pawns[0]);
-		bitboard_util::print_bitboard(pawns[1]);
+		bitboard_util::print_bitboard(bbs[PAWN][0]);
+		bitboard_util::print_bitboard(bbs[PAWN][1]);
 	}
 }
 
@@ -544,22 +544,22 @@ uint8_t bitboard::piece_type_from_index(unsigned long i)
 {
 	uint64_t mask = (1ULL << i);
 	bool allegiance = (mask & pieces[0]) == 0;
-	if ((pawns[allegiance] & mask) != 0ULL) {
+	if ((bbs[PAWN][allegiance] & mask) != 0ULL) {
 		return bitboard_util::pawn;
 	}
-	if ((knights[allegiance] & mask) != 0ULL) {
+	if ((bbs[KNIGHT][allegiance] & mask) != 0ULL) {
 		return bitboard_util::knight;
 	}
-	if ((bishops[allegiance] & mask) != 0ULL) {
+	if ((bbs[BISHOP][allegiance] & mask) != 0ULL) {
 		return bitboard_util::bishop;
 	}
-	if ((rooks[allegiance] & mask) != 0ULL) {
+	if ((bbs[ROOK][allegiance] & mask) != 0ULL) {
 		return bitboard_util::rook;
 	}
-	if ((queens[allegiance] & mask) != 0ULL) {
+	if ((bbs[QUEEN][allegiance] & mask) != 0ULL) {
 		return bitboard_util::queen;
 	}
-	if ((kings[allegiance] & mask) != 0ULL) {
+	if ((bbs[KING][allegiance] & mask) != 0ULL) {
 		return bitboard_util::king;
 	}
 	return bitboard_util::empty;
