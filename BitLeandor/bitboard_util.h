@@ -42,13 +42,13 @@ public:
 	static const uint64_t b_kingside_castling_mask = 6917529027641081856ULL;
 
 	enum {
-		empty, 
 		pawn,
 		knight,
 		bishop,
 		rook,
 		queen,
-		king
+		king,
+		empty
 	};
 	
 private:

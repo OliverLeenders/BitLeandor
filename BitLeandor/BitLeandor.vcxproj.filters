@@ -45,6 +45,12 @@
     <ClInclude Include="perft.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="evaluator.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="search.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="attacks.cpp">
@@ -78,6 +84,12 @@
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="perft.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="evaluator.cpp">
+      <Filter>Headerdateien</Filter>
+    </ClCompile>
+    <ClCompile Include="search.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
   </ItemGroup>

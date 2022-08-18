@@ -13,7 +13,7 @@ public:
 	bitboard();
 
 	uint64_t bbs[6][2] = { {0, 0}, {0, 0}, {0, 0} , {0, 0} , {0, 0}, {0, 0} };
-	int types[64] = { 0 };
+	int types[64] = { 6 };
 
 	enum {
 		WHITE = 0,
@@ -27,7 +27,8 @@ public:
 		BISHOP = 2,
 		ROOK = 3,
 		QUEEN = 4,
-		KING = 5
+		KING = 5,
+		EMPTY = 6
 	};
 	// occupancy bitboards
 	uint64_t pieces[3] = { 0 };

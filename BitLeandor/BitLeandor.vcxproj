@@ -144,10 +144,12 @@
     <ClInclude Include="bitboard_util.h" />
     <ClInclude Include="bit_move.h" />
     <ClInclude Include="board_state.h" />
+    <ClInclude Include="evaluator.h" />
     <ClInclude Include="movelist.h" />
     <ClInclude Include="magics.h" />
     <ClInclude Include="movegen.h" />
     <ClInclude Include="perft.h" />
+    <ClInclude Include="search.h" />
     <ClInclude Include="utility.h" />
   </ItemGroup>
   <ItemGroup>
@@ -156,11 +158,13 @@
     <ClCompile Include="bitboard_util.cpp" />
     <ClCompile Include="bit_move.cpp" />
     <ClCompile Include="board_state.cpp" />
+    <ClCompile Include="evaluator.cpp" />
     <ClCompile Include="magics.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="movegen.cpp" />
     <ClCompile Include="movelist.cpp" />
     <ClCompile Include="perft.cpp" />
+    <ClCompile Include="search.cpp" />
     <ClCompile Include="utility.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
