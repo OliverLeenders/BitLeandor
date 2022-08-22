@@ -43,15 +43,7 @@ void movegen::generate_pawn_qmoves(bitboard* b, movelist* l) {
 		l->size++;
 		double_pushes ^= 1ULL << target;
 	}
-	while (promotion_pushes != 0ULL) {
-		_BitScanForward64(&target, promotion_pushes);
-		l->moves[l->size] = bit_move(target - push_offset, target, bit_move::queen_promotion, bitboard_util::pawn, bitboard_util::empty);
-		l->moves[l->size + 1] = bit_move(target - push_offset, target, bit_move::rook_promotion, bitboard_util::pawn, bitboard_util::empty);
-		l->moves[l->size + 2] = bit_move(target - push_offset, target, bit_move::bishop_promotion, bitboard_util::pawn, bitboard_util::empty);
-		l->moves[l->size + 3] = bit_move(target - push_offset, target, bit_move::knight_promotion, bitboard_util::pawn, bitboard_util::empty);
-		l->size += 4;
-		promotion_pushes ^= 1ULL << target;
-	}
+	
 }
 /// <summary>
 /// Generate pawn captures including en-passant captures and capture promotions
@@ -62,10 +54,15 @@ void movegen::generate_pawn_cmoves(bitboard* b, movelist* l)
 {
 	unsigned long origin;
 	unsigned long target;
+
+	int push_offset = 8;
 	uint64_t pawns = b->bbs[bitboard::PAWN][b->side_to_move];
+	uint64_t pushes = (b->side_to_move) ? ((pawns >> push_offset) & ~b->pieces[2]) : ((pawns << push_offset) & ~b->pieces[2]);
+	uint64_t promotion_rank = (b->side_to_move) ? bitboard_util::first_rank : bitboard_util::eighth_rank;
+	uint64_t promotion_pushes = pushes & promotion_rank;
+	push_offset = (b->side_to_move) ? -8 : 8;
 	while (pawns != 0ULL) {
 		_BitScanForward64(&origin, pawns);
-		uint64_t promotion_rank = (b->side_to_move) ? bitboard_util::first_rank : bitboard_util::eighth_rank;
 		uint64_t pawn_attacks = attacks::pawn_attacks[b->side_to_move][origin] & (b->pieces[!b->side_to_move] | (1ULL << b->ep_target_square));
 		while (pawn_attacks != 0ULL) {
 			_BitScanForward64(&target, pawn_attacks);
@@ -89,6 +86,16 @@ void movegen::generate_pawn_cmoves(bitboard* b, movelist* l)
 		}
 		pawns ^= 1ULL << origin;
 	}
+	while (promotion_pushes != 0ULL) {
+		_BitScanForward64(&target, promotion_pushes);
+		l->moves[l->size] = bit_move(target - push_offset, target, bit_move::queen_promotion, bitboard_util::pawn, bitboard_util::empty);
+		l->moves[l->size + 1] = bit_move(target - push_offset, target, bit_move::rook_promotion, bitboard_util::pawn, bitboard_util::empty);
+		l->moves[l->size + 2] = bit_move(target - push_offset, target, bit_move::bishop_promotion, bitboard_util::pawn, bitboard_util::empty);
+		l->moves[l->size + 3] = bit_move(target - push_offset, target, bit_move::knight_promotion, bitboard_util::pawn, bitboard_util::empty);
+		l->size += 4;
+		promotion_pushes ^= 1ULL << target;
+	}
+
 }
 
 void movegen::generate_knight_qmoves(bitboard* b, movelist* l)

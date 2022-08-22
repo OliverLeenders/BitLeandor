@@ -86,10 +86,10 @@
     <ClCompile Include="perft.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="evaluator.cpp">
-      <Filter>Headerdateien</Filter>
-    </ClCompile>
     <ClCompile Include="search.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="evaluator.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
   </ItemGroup>

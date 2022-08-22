@@ -15,11 +15,3 @@ public:
 private:
 
 };
-
-evaluator::evaluator()
-{
-}
-
-evaluator::~evaluator()
-{
-}

@@ -36,17 +36,18 @@ int evaluator::eval_material(bitboard* b)
 	phase += (num_w_bishops + num_b_bishops) * game_phase_values[bitboard::BISHOP];
 	phase += (num_w_knights + num_b_knights) * game_phase_values[bitboard::KNIGHT];
 
-	midgame_score += (num_w_queens - num_b_queens) * piece_values[bitboard::QUEEN][MIDGAME];
-	midgame_score += (num_w_rooks - num_b_rooks) * piece_values[bitboard::ROOK][MIDGAME];
-	midgame_score += (num_w_bishops - num_b_bishops) * piece_values[bitboard::BISHOP][MIDGAME];
-	midgame_score += (num_w_knights - num_b_knights) * piece_values[bitboard::KNIGHT][MIDGAME];
-	midgame_score += (num_w_pawns - num_b_pawns) * piece_values[bitboard::PAWN][MIDGAME];
+	midgame_score += (num_w_queens - num_b_queens) * piece_values[MIDGAME][bitboard::QUEEN];
+	midgame_score += (num_w_rooks - num_b_rooks) * piece_values[MIDGAME][bitboard::ROOK];
+	midgame_score += (num_w_bishops - num_b_bishops) * piece_values[MIDGAME][bitboard::BISHOP];
+	midgame_score += (num_w_knights - num_b_knights) * piece_values[MIDGAME][bitboard::KNIGHT];
+	midgame_score += (num_w_pawns - num_b_pawns) * piece_values[MIDGAME][bitboard::PAWN];
+
+	endgame_score += (num_w_queens - num_b_queens) * piece_values[ENDGAME][bitboard::QUEEN];
+	endgame_score += (num_w_rooks - num_b_rooks) * piece_values[ENDGAME][bitboard::ROOK];
+	endgame_score += (num_w_bishops - num_b_bishops) * piece_values[ENDGAME][bitboard::BISHOP];
+	endgame_score += (num_w_knights - num_b_knights) * piece_values[ENDGAME][bitboard::KNIGHT];
+	endgame_score += (num_w_pawns - num_b_pawns) * piece_values[ENDGAME][bitboard::PAWN];
 	
-	endgame_score += (num_w_queens - num_b_queens) * piece_values[bitboard::QUEEN][ENDGAME];
-	endgame_score += (num_w_rooks - num_b_rooks) * piece_values[bitboard::ROOK][ENDGAME];
-	endgame_score += (num_w_bishops - num_b_bishops) * piece_values[bitboard::BISHOP][ENDGAME];
-	endgame_score += (num_w_knights - num_b_knights) * piece_values[bitboard::KNIGHT][ENDGAME];
-	endgame_score += (num_w_pawns - num_b_pawns) * piece_values[bitboard::PAWN][ENDGAME];
-	
-	return (midgame_score * phase + endgame_score * (24 - phase)) / 24;
+	int score = (midgame_score * phase + endgame_score * (24 - phase)) / 24;
+	return (b->side_to_move) ? -score : score;
 }
