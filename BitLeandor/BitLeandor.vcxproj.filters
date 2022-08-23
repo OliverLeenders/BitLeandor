@@ -51,6 +51,9 @@
     <ClInclude Include="search.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="scorelist.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="attacks.cpp">
@@ -90,6 +93,9 @@
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="evaluator.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="scorelist.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
   </ItemGroup>

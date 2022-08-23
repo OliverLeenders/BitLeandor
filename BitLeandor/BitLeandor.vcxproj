@@ -152,6 +152,7 @@
     <ClInclude Include="magics.h" />
     <ClInclude Include="movegen.h" />
     <ClInclude Include="perft.h" />
+    <ClInclude Include="scorelist.h" />
     <ClInclude Include="search.h" />
     <ClInclude Include="utility.h" />
   </ItemGroup>
@@ -167,6 +168,7 @@
     <ClCompile Include="movegen.cpp" />
     <ClCompile Include="movelist.cpp" />
     <ClCompile Include="perft.cpp" />
+    <ClCompile Include="scorelist.cpp" />
     <ClCompile Include="search.cpp" />
     <ClCompile Include="utility.cpp" />
   </ItemGroup>

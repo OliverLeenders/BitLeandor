@@ -11,6 +11,7 @@ int main() {
 	attacks::init_attack_tables();
 	// generate mafics
 	Utility::generate_magic_attacks();
+	evaluator::init_tables();
 
 	std::string pos = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 	// std::string pos = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
