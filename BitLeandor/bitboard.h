@@ -6,6 +6,7 @@
 #include "utility.h"
 #include "bit_move.h"
 #include "board_state.h"
+#include "constants.h"
 
 class bitboard
 {
@@ -15,21 +16,6 @@ public:
 	uint64_t bbs[6][2] = { {0, 0}, {0, 0}, {0, 0} , {0, 0} , {0, 0}, {0, 0} };
 	int types[64] = { 6 };
 
-	enum {
-		WHITE = 0,
-		BLACK = 1
-	};
-
-	enum
-	{
-		PAWN = 0,
-		KNIGHT = 1,
-		BISHOP = 2,
-		ROOK = 3,
-		QUEEN = 4,
-		KING = 5,
-		EMPTY = 6
-	};
 	// occupancy bitboards
 	uint64_t pieces[3] = { 0 };
 	bool side_to_move = 0;

@@ -25,7 +25,7 @@ int search::quiescence(bitboard* b, int alpha, int beta, int ply)
 	// if is check
 	NODES_SEARCHED++;
 	unsigned long king_pos;
-	_BitScanForward64(&king_pos, b->bbs[bitboard::KING][b->side_to_move]);
+	_BitScanForward64(&king_pos, b->bbs[KING][b->side_to_move]);
 	bool is_check = b->is_square_attacked(king_pos, !b->side_to_move);
 	moves[ply].size = 0;
 	scores[ply].size = 0;
@@ -77,7 +77,7 @@ int search::alpha_beta(bitboard* b, int depth, int alpha, int beta, int ply)
 {
 	NODES_SEARCHED++;
 	unsigned long king_pos;
-	_BitScanForward64(&king_pos, b->bbs[bitboard::KING][b->side_to_move]);
+	_BitScanForward64(&king_pos, b->bbs[KING][b->side_to_move]);
 	bool is_check = b->is_square_attacked(king_pos, !b->side_to_move);
 	// if is check increase depth by 1
 	depth += is_check;

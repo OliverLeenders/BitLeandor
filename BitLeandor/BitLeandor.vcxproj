@@ -147,6 +147,7 @@
     <ClInclude Include="bitboard_util.h" />
     <ClInclude Include="bit_move.h" />
     <ClInclude Include="board_state.h" />
+    <ClInclude Include="constants.h" />
     <ClInclude Include="evaluator.h" />
     <ClInclude Include="movelist.h" />
     <ClInclude Include="magics.h" />

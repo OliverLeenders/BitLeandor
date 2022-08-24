@@ -2,6 +2,8 @@
 #include <cstdint>
 #include <iostream>
 #include <intrin.h>
+#include "constants.h"
+
 
 #pragma intrinsic(_BitScanForward64)
 #pragma intrinsic(_BitScanReverse64)
@@ -40,16 +42,6 @@ public:
 	static const uint64_t w_kingside_castling_mask = 96ULL;
 	static const uint64_t b_queenside_castling_mask = 1008806316530991104ULL;
 	static const uint64_t b_kingside_castling_mask = 6917529027641081856ULL;
-
-	enum {
-		pawn,
-		knight,
-		bishop,
-		rook,
-		queen,
-		king,
-		empty
-	};
 	
 private:
 	static int index_64[64];
