@@ -29,19 +29,21 @@ int search::quiescence(bitboard* b, int alpha, int beta, int ply)
 	bool is_check = b->is_square_attacked(king_pos, !b->side_to_move);
 	moves[ply].size = 0;
 	scores[ply].size = 0;
+	int stand_pat = -MATE;
 	if (is_check) {
 		movegen::generate_all_pseudo_legal_moves(b, &moves[ply]);
 	}
 	else {
 		movegen::generate_all_captures(b, &moves[ply]);
+		stand_pat = evaluator::eval(b);
+		if (stand_pat >= beta) {
+			return beta;
+		}
+		if (stand_pat > alpha) {
+			alpha = stand_pat;
+		}
 	}
-	int stand_pat = evaluator::eval(b);
-	if (stand_pat >= beta) {
-		return beta;
-	}
-	if (stand_pat > alpha) {
-		alpha = stand_pat;
-	}
+	
 	int num_legal = 0;
 	int size = moves[ply].size;
 	score_moves(&moves[ply], &scores[ply], ply, b->side_to_move);
@@ -63,7 +65,7 @@ int search::quiescence(bitboard* b, int alpha, int beta, int ply)
 		}
 	}
 	if (is_check && num_legal == 0) {
-		return MATE;
+		return -MATE;
 	}
 	if (num_legal == 0) {
 		return evaluator::eval(b);
@@ -119,7 +121,7 @@ int search::alpha_beta(bitboard* b, int depth, int alpha, int beta, int ply)
 		}
 	}
 	if (is_check && num_legal == 0) {
-		return MATE;
+		return -MATE;
 	}
 	else if (num_legal == 0) {
 		return 0;

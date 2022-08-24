@@ -7,12 +7,13 @@ const int evaluator::piece_values[2][6] = {
 
 const int evaluator::game_phase_values[6] = {
 	0,
-	4,
-	4,
-	6,
-	10,
+	4, // 16
+	4, // 16
+	6, // 24
+	10, // 20
 	0
 };
+// total : 16 + 16 + 24 + 20 = 76
 
 int evaluator::piece_square_tables[2][2][6][64] = { 0 };
 
@@ -85,7 +86,7 @@ int evaluator::eval(bitboard* b)
 		b_pawns &= b_pawns - 1;
 	}
 
-	uint64_t w_knights = b->bbs[bitboard::PAWN][bitboard::WHITE];
+	uint64_t w_knights = b->bbs[bitboard::KNIGHT][bitboard::WHITE];
 	while (w_knights != 0ULL)
 	{
 		_BitScanForward64(&index, w_knights);
@@ -94,7 +95,7 @@ int evaluator::eval(bitboard* b)
 		w_knights &= w_knights - 1;
 	}
 
-	uint64_t b_knights = b->bbs[bitboard::PAWN][bitboard::BLACK];
+	uint64_t b_knights = b->bbs[bitboard::KNIGHT][bitboard::BLACK];
 	while (b_knights != 0ULL)
 	{
 		_BitScanForward64(&index, b_knights);
@@ -128,7 +129,7 @@ int evaluator::eval(bitboard* b)
 	{
 		_BitScanForward64(&index, w_rooks);
 		mobility = __popcnt64(attacks::get_rook_attacks(index, b->pieces[2]));
-		midgame_score += piece_square_tables[MIDGAME][bitboard::WHITE][bitboard::ROOK][index] + mobility;
+		midgame_score += piece_square_tables[MIDGAME][bitboard::WHITE][bitboard::ROOK][index] + (mobility / 2);
 		endgame_score += piece_square_tables[ENDGAME][bitboard::WHITE][bitboard::ROOK][index] + mobility;
 		w_rooks &= w_rooks - 1;
 	}
@@ -138,7 +139,7 @@ int evaluator::eval(bitboard* b)
 	{
 		_BitScanForward64(&index, b_rooks);
 		mobility = -(int)__popcnt64(attacks::get_rook_attacks(index, b->pieces[2]));
-		midgame_score += piece_square_tables[MIDGAME][bitboard::BLACK][bitboard::ROOK][index] + mobility;
+		midgame_score += piece_square_tables[MIDGAME][bitboard::BLACK][bitboard::ROOK][index] + (mobility / 2);
 		endgame_score += piece_square_tables[ENDGAME][bitboard::BLACK][bitboard::ROOK][index] + mobility;
 		b_rooks &= b_rooks - 1;
 	}
@@ -148,8 +149,8 @@ int evaluator::eval(bitboard* b)
 	{
 		_BitScanForward64(&index, w_queens);
 		mobility = __popcnt64(attacks::get_rook_attacks(index, b->pieces[2]) | attacks::get_bishop_attacks(index, b->pieces[2]));
-		midgame_score += piece_square_tables[MIDGAME][bitboard::WHITE][bitboard::QUEEN][index] + mobility;
-		endgame_score += piece_square_tables[ENDGAME][bitboard::WHITE][bitboard::QUEEN][index] + mobility;
+		midgame_score += piece_square_tables[MIDGAME][bitboard::WHITE][bitboard::QUEEN][index] + (mobility / 4);
+		endgame_score += piece_square_tables[ENDGAME][bitboard::WHITE][bitboard::QUEEN][index] + (mobility / 2);
 		w_queens &= w_queens - 1;
 	}
 	
@@ -158,8 +159,8 @@ int evaluator::eval(bitboard* b)
 	{
 		_BitScanForward64(&index, b_queens);
 		mobility = -(int)__popcnt64(attacks::get_rook_attacks(index, b->pieces[2]) | attacks::get_bishop_attacks(index, b->pieces[2]));
-		midgame_score += piece_square_tables[MIDGAME][bitboard::BLACK][bitboard::QUEEN][index] + mobility;
-		endgame_score += piece_square_tables[ENDGAME][bitboard::BLACK][bitboard::QUEEN][index] + mobility;
+		midgame_score += piece_square_tables[MIDGAME][bitboard::BLACK][bitboard::QUEEN][index] + (mobility / 4);
+		endgame_score += piece_square_tables[ENDGAME][bitboard::BLACK][bitboard::QUEEN][index] + (mobility / 2);
 		b_queens &= b_queens - 1;
 	}
 	
@@ -171,7 +172,7 @@ int evaluator::eval(bitboard* b)
 	midgame_score += piece_square_tables[MIDGAME][bitboard::BLACK][bitboard::KING][index];
 	endgame_score += piece_square_tables[ENDGAME][bitboard::BLACK][bitboard::KING][index];
 	
-	int score = (midgame_score * phase + endgame_score * (24 - phase)) / 24;
+	int score = (midgame_score * (phase) + endgame_score * (76 - phase)) / 76;
 	return (b->side_to_move) ? -score : score;
 }
 
@@ -208,19 +209,6 @@ void evaluator::init_tables()
 		piece_square_tables[MIDGAME][bitboard::BLACK][bitboard::KING][i] = -king_pst_mg[i];
 		piece_square_tables[ENDGAME][bitboard::WHITE][bitboard::KING][i] = king_pst_eg[(7 - i / 8) * 8 + i % 8];
 		piece_square_tables[ENDGAME][bitboard::BLACK][bitboard::KING][i] = -king_pst_eg[i];
-	}
-	for (int i = 0; i < 8; i++) {
-		for (int j = 0; j < 8; j++) {
-			std::cout << piece_square_tables[MIDGAME][bitboard::WHITE][bitboard::PAWN][i * 8 + j] << ", ";
-		}
-		std::cout << std::endl;
-	}
-	std::cout << std::endl;
-	for (int i = 0; i < 8; i++) {
-		for (int j = 0; j < 8; j++) {
-			std::cout << piece_square_tables[MIDGAME][bitboard::BLACK][bitboard::PAWN][i * 8 + j] << ", ";
-		}
-		std::cout << std::endl;
 	}
 }
 
