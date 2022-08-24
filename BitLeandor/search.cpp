@@ -99,14 +99,19 @@ int search::alpha_beta(bitboard* b, int depth, int alpha, int beta, int ply)
 		fetch_next_move(&moves[ply], &scores[ply], i);
 		bit_move m = moves[ply].moves[i];
 		if (b->is_legal<true>(&m)) {
+			
 			num_legal++;
+			
 			b->make_move(&m);
 			int score = -alpha_beta(b, depth - 1, -beta, -alpha, ply + 1);
 			b->unmake_move();
+			
 			if (score >= beta) {
 				history[b->side_to_move][m.get_origin()][m.get_target()] += ply * ply;
+				
 				killers[1][ply] = killers[0][ply];
 				killers[0][ply] = m;
+				
 				return score;
 			}
 			if (score > alpha) {
@@ -117,6 +122,13 @@ int search::alpha_beta(bitboard* b, int depth, int alpha, int beta, int ply)
 			}
 		}
 	}
+	if (is_check && num_legal == 0) {
+		return MATE;
+	}
+	else if (num_legal == 0) {
+		return 0;
+	}
+	
 	return best_score;
 }
 

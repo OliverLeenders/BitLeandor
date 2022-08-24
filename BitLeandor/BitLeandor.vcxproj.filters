@@ -54,6 +54,12 @@
     <ClInclude Include="scorelist.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="transposition_table.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="tt_entry.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="attacks.cpp">
@@ -96,6 +102,12 @@
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="scorelist.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="transposition_table.cpp">
+      <Filter>Headerdateien</Filter>
+    </ClCompile>
+    <ClCompile Include="tt_entry.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
   </ItemGroup>

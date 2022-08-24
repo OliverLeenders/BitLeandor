@@ -154,6 +154,8 @@
     <ClInclude Include="perft.h" />
     <ClInclude Include="scorelist.h" />
     <ClInclude Include="search.h" />
+    <ClInclude Include="transposition_table.h" />
+    <ClInclude Include="tt_entry.h" />
     <ClInclude Include="utility.h" />
   </ItemGroup>
   <ItemGroup>
@@ -170,6 +172,8 @@
     <ClCompile Include="perft.cpp" />
     <ClCompile Include="scorelist.cpp" />
     <ClCompile Include="search.cpp" />
+    <ClCompile Include="transposition_table.cpp" />
+    <ClCompile Include="tt_entry.cpp" />
     <ClCompile Include="utility.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

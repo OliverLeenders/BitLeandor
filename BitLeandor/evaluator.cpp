@@ -63,6 +63,8 @@ int evaluator::eval_material(bitboard* b)
 	endgame_score += (num_w_knights - num_b_knights) * piece_values[ENDGAME][bitboard::KNIGHT];
 	endgame_score += (num_w_pawns - num_b_pawns) * piece_values[ENDGAME][bitboard::PAWN];
 
+	int mobility = 0;
+	
 	uint64_t w_pawns = b->bbs[bitboard::PAWN][bitboard::WHITE];
 
 	unsigned long index = 0;
@@ -105,8 +107,9 @@ int evaluator::eval_material(bitboard* b)
 	while (w_bishops != 0ULL)
 	{
 		_BitScanForward64(&index, w_bishops);
-		midgame_score += piece_square_tables[MIDGAME][bitboard::WHITE][bitboard::BISHOP][index];
-		endgame_score += piece_square_tables[ENDGAME][bitboard::WHITE][bitboard::BISHOP][index];
+		mobility = __popcnt64(attacks::get_bishop_attacks(index, b->pieces[2]));
+		midgame_score += piece_square_tables[MIDGAME][bitboard::WHITE][bitboard::BISHOP][index] + mobility;
+		endgame_score += piece_square_tables[ENDGAME][bitboard::WHITE][bitboard::BISHOP][index] + mobility;
 		w_bishops &= w_bishops - 1;
 	}
 	
@@ -114,8 +117,9 @@ int evaluator::eval_material(bitboard* b)
 	while (b_bishops != 0ULL)
 	{
 		_BitScanForward64(&index, b_bishops);
-		midgame_score += piece_square_tables[MIDGAME][bitboard::BLACK][bitboard::BISHOP][index];
-		endgame_score += piece_square_tables[ENDGAME][bitboard::BLACK][bitboard::BISHOP][index];
+		mobility = -(int)__popcnt64(attacks::get_bishop_attacks(index, b->pieces[2]));
+		midgame_score += piece_square_tables[MIDGAME][bitboard::BLACK][bitboard::BISHOP][index] + mobility;
+		endgame_score += piece_square_tables[ENDGAME][bitboard::BLACK][bitboard::BISHOP][index] + mobility;
 		b_bishops &= b_bishops - 1;
 	}
 	
@@ -123,8 +127,9 @@ int evaluator::eval_material(bitboard* b)
 	while (w_rooks != 0ULL)
 	{
 		_BitScanForward64(&index, w_rooks);
-		midgame_score += piece_square_tables[MIDGAME][bitboard::WHITE][bitboard::ROOK][index];
-		endgame_score += piece_square_tables[ENDGAME][bitboard::WHITE][bitboard::ROOK][index];
+		mobility = __popcnt64(attacks::get_rook_attacks(index, b->pieces[2]));
+		midgame_score += piece_square_tables[MIDGAME][bitboard::WHITE][bitboard::ROOK][index] + mobility;
+		endgame_score += piece_square_tables[ENDGAME][bitboard::WHITE][bitboard::ROOK][index] + mobility;
 		w_rooks &= w_rooks - 1;
 	}
 	
@@ -132,8 +137,9 @@ int evaluator::eval_material(bitboard* b)
 	while (b_rooks != 0ULL)
 	{
 		_BitScanForward64(&index, b_rooks);
-		midgame_score += piece_square_tables[MIDGAME][bitboard::BLACK][bitboard::ROOK][index];
-		endgame_score += piece_square_tables[ENDGAME][bitboard::BLACK][bitboard::ROOK][index];
+		mobility = -(int)__popcnt64(attacks::get_rook_attacks(index, b->pieces[2]));
+		midgame_score += piece_square_tables[MIDGAME][bitboard::BLACK][bitboard::ROOK][index] + mobility;
+		endgame_score += piece_square_tables[ENDGAME][bitboard::BLACK][bitboard::ROOK][index] + mobility;
 		b_rooks &= b_rooks - 1;
 	}
 	
@@ -141,8 +147,9 @@ int evaluator::eval_material(bitboard* b)
 	while (w_queens != 0ULL)
 	{
 		_BitScanForward64(&index, w_queens);
-		midgame_score += piece_square_tables[MIDGAME][bitboard::WHITE][bitboard::QUEEN][index];
-		endgame_score += piece_square_tables[ENDGAME][bitboard::WHITE][bitboard::QUEEN][index];
+		mobility = __popcnt64(attacks::get_rook_attacks(index, b->pieces[2]) | attacks::get_bishop_attacks(index, b->pieces[2]));
+		midgame_score += piece_square_tables[MIDGAME][bitboard::WHITE][bitboard::QUEEN][index] + mobility;
+		endgame_score += piece_square_tables[ENDGAME][bitboard::WHITE][bitboard::QUEEN][index] + mobility;
 		w_queens &= w_queens - 1;
 	}
 	
@@ -150,8 +157,9 @@ int evaluator::eval_material(bitboard* b)
 	while (b_queens != 0ULL)
 	{
 		_BitScanForward64(&index, b_queens);
-		midgame_score += piece_square_tables[MIDGAME][bitboard::BLACK][bitboard::QUEEN][index];
-		endgame_score += piece_square_tables[ENDGAME][bitboard::BLACK][bitboard::QUEEN][index];
+		mobility = -(int)__popcnt64(attacks::get_rook_attacks(index, b->pieces[2]) | attacks::get_bishop_attacks(index, b->pieces[2]));
+		midgame_score += piece_square_tables[MIDGAME][bitboard::BLACK][bitboard::QUEEN][index] + mobility;
+		endgame_score += piece_square_tables[ENDGAME][bitboard::BLACK][bitboard::QUEEN][index] + mobility;
 		b_queens &= b_queens - 1;
 	}
 	
