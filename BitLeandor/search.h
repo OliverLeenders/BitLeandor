@@ -23,7 +23,9 @@ public:
 	static bit_move PV[2080];
 
 	static int NODES_SEARCHED;
-	static inline int get_pv_index(int depth_left);
+	static inline int get_pv_index(int depth_left)  {
+		return (depth_left * depth_left) >> 1; // depth_left * depth_left / 2
+	}
 	static int alpha_beta(bitboard* b, int depth, int alpha, int beta, int ply);
 	static int quiescence(bitboard* b, int alpha, int beta, int ply);
 	static void update_PV(bit_move* m, int depth);

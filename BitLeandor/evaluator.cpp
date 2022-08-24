@@ -29,7 +29,7 @@ const int evaluator::king_pst_eg[64] = {
 };
 
 
-int evaluator::eval_material(bitboard* b)
+int evaluator::eval(bitboard* b)
 {
 	int midgame_score = 0;
 	int endgame_score = 0;

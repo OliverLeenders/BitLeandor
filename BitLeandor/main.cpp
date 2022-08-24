@@ -35,10 +35,10 @@ int main() {
 
 	//std::cout << perft::run_perft_console(&board, 5) << std::endl;
 	std::cout << search::quiescence(&board, -search::MATE, search::MATE, 0) << std::endl;
-	std::cout << "eval: " << evaluator::eval_material(&board) << std::endl;
-	std::cout << search::alpha_beta(&board, 8, -search::MATE, search::MATE, 0) << std::endl;
-	int pv_index = search::get_pv_index(8);
-	for (int i = 0; i < 8; i++) {
+	std::cout << "eval: " << evaluator::eval(&board) << std::endl;
+	std::cout << search::alpha_beta(&board, 7, -search::MATE, search::MATE, 0) << std::endl;
+	int pv_index = search::get_pv_index(7);
+	for (int i = 0; i < 7; i++) {
 		std::cout << bit_move::to_string(search::PV[pv_index + i]) << " ";
 	}
 	std::cout << std::endl;

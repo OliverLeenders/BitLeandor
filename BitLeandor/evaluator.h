@@ -5,7 +5,7 @@
 class evaluator
 {
 public:
-	static int eval_material(bitboard* b);
+	static int eval(bitboard* b);
 	static void init_tables();
 	
 	enum {

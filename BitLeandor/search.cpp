@@ -19,10 +19,6 @@ const int search::mvv_lva[6][6] = {
 };
 
 
-inline int search::get_pv_index(int depth_left)
-{
-	return (depth_left * depth_left) >> 1; // depth * depth / 2
-}
 
 int search::quiescence(bitboard* b, int alpha, int beta, int ply)
 {
@@ -39,7 +35,7 @@ int search::quiescence(bitboard* b, int alpha, int beta, int ply)
 	else {
 		movegen::generate_all_captures(b, &moves[ply]);
 	}
-	int stand_pat = evaluator::eval_material(b);
+	int stand_pat = evaluator::eval(b);
 	if (stand_pat >= beta) {
 		return beta;
 	}
@@ -70,7 +66,7 @@ int search::quiescence(bitboard* b, int alpha, int beta, int ply)
 		return MATE;
 	}
 	if (num_legal == 0) {
-		return evaluator::eval_material(b);
+		return evaluator::eval(b);
 	}
 	else return alpha;
 }
