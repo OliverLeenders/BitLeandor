@@ -12,9 +12,9 @@ public:
 		MIDGAME = 0,
 		ENDGAME = 1
 	};
-	const static int piece_values[2][6];
+	const static int piece_values[2][12];
 	const static int game_phase_values[6];
-	static int piece_square_tables[2][2][6][64];
+	static int piece_square_tables[2][12][64];
 	const static int pawn_pst_mg[64];
 	const static int pawn_pst_eg[64];
 	const static int knight_pst_mg[64];

@@ -31,3 +31,10 @@ enum Pieces : uint8_t {
 	BLACK_KING = 11,
 	EMPTY_PIECE = 12
 };
+
+enum Castling_Rights : uint8_t {
+	WHITE_KINGSIDE = 0,
+	WHITE_QUEENSIDE = 1,
+	BLACK_KINGSIDE = 2,
+	BLACK_QUEENSIDE = 3
+};

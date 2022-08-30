@@ -1,8 +1,8 @@
 #include "evaluator.h"
 
-const int evaluator::piece_values[2][6] = {
-	{ 100, 300, 330, 480, 900, 0 },
-	{ 120, 310, 340, 550, 1000, 0 }
+const int evaluator::piece_values[2][12]= {
+	{ 100, 300, 330, 480, 900, 0 , -100, -300, -330, -480, -900, 0 },
+	{ 120, 310, 340, 550, 1000, 0 , -120, -310, -340, -550, -1000, 0}
 };
 
 const int evaluator::game_phase_values[6] = {
@@ -15,7 +15,7 @@ const int evaluator::game_phase_values[6] = {
 };
 // total : 16 + 16 + 24 + 20 = 76
 
-int evaluator::piece_square_tables[2][2][6][64] = { 0 };
+int evaluator::piece_square_tables[2][12][64] = { 0 };
 
 
 const int evaluator::king_pst_eg[64] = {
@@ -36,143 +36,19 @@ int evaluator::eval(bitboard* b)
 	int endgame_score = 0;
 
 	int phase = 0;
-	int num_w_queens = __popcnt64(b->bbs[QUEEN][WHITE]);
-	int num_b_queens = __popcnt64(b->bbs[QUEEN][BLACK]);
-	int num_w_rooks = __popcnt64(b->bbs[ROOK][WHITE]);
-	int num_b_rooks = __popcnt64(b->bbs[ROOK][BLACK]);
-	int num_w_bishops = __popcnt64(b->bbs[BISHOP][WHITE]);
-	int num_b_bishops = __popcnt64(b->bbs[BISHOP][BLACK]);
-	int num_w_knights = __popcnt64(b->bbs[KNIGHT][WHITE]);
-	int num_b_knights = __popcnt64(b->bbs[KNIGHT][BLACK]);
-	int num_w_pawns = __popcnt64(b->bbs[PAWN][WHITE]);
-	int num_b_pawns = __popcnt64(b->bbs[PAWN][BLACK]);
-
-	phase += (num_w_queens + num_b_queens) * game_phase_values[QUEEN];
-	phase += (num_w_rooks + num_b_rooks) * game_phase_values[ROOK];
-	phase += (num_w_bishops + num_b_bishops) * game_phase_values[BISHOP];
-	phase += (num_w_knights + num_b_knights) * game_phase_values[KNIGHT];
-
-	midgame_score += (num_w_queens - num_b_queens) * piece_values[MIDGAME][QUEEN];
-	midgame_score += (num_w_rooks - num_b_rooks) * piece_values[MIDGAME][ROOK];
-	midgame_score += (num_w_bishops - num_b_bishops) * piece_values[MIDGAME][BISHOP];
-	midgame_score += (num_w_knights - num_b_knights) * piece_values[MIDGAME][KNIGHT];
-	midgame_score += (num_w_pawns - num_b_pawns) * piece_values[MIDGAME][PAWN];
-
-	endgame_score += (num_w_queens - num_b_queens) * piece_values[ENDGAME][QUEEN];
-	endgame_score += (num_w_rooks - num_b_rooks) * piece_values[ENDGAME][ROOK];
-	endgame_score += (num_w_bishops - num_b_bishops) * piece_values[ENDGAME][BISHOP];
-	endgame_score += (num_w_knights - num_b_knights) * piece_values[ENDGAME][KNIGHT];
-	endgame_score += (num_w_pawns - num_b_pawns) * piece_values[ENDGAME][PAWN];
-
-	int mobility = 0;
-	
-	uint64_t w_pawns = b->bbs[PAWN][WHITE];
 
 	unsigned long index = 0;
-	while (w_pawns != 0ULL)
-	{
-		_BitScanForward64(&index, w_pawns);
-		midgame_score += piece_square_tables[MIDGAME][WHITE][PAWN][index];
-		endgame_score += piece_square_tables[ENDGAME][WHITE][PAWN][index];
-		w_pawns &= w_pawns - 1;
+	uint64_t occ = b->occupancy[2];
+	while (occ != 0ULL) {
+		_BitScanForward64(&index, occ);
+		uint8_t piece = b->pieces[index];
+		midgame_score += piece_values[MIDGAME][piece] + piece_square_tables[MIDGAME][piece][index];
+		endgame_score += piece_values[ENDGAME][piece] + piece_square_tables[ENDGAME][piece][index];
+		phase += game_phase_values[b->types[index]];
+		occ &= occ - 1;
 	}
 
-	uint64_t b_pawns = b->bbs[PAWN][BLACK];
-	while (b_pawns != 0ULL)
-	{
-		_BitScanForward64(&index, b_pawns);
-		midgame_score += piece_square_tables[MIDGAME][BLACK][PAWN][index];
-		endgame_score += piece_square_tables[ENDGAME][BLACK][PAWN][index];
-		b_pawns &= b_pawns - 1;
-	}
-
-	uint64_t w_knights = b->bbs[KNIGHT][WHITE];
-	while (w_knights != 0ULL)
-	{
-		_BitScanForward64(&index, w_knights);
-		midgame_score += piece_square_tables[MIDGAME][WHITE][KNIGHT][index];
-		endgame_score += piece_square_tables[ENDGAME][WHITE][KNIGHT][index];
-		w_knights &= w_knights - 1;
-	}
-
-	uint64_t b_knights = b->bbs[KNIGHT][BLACK];
-	while (b_knights != 0ULL)
-	{
-		_BitScanForward64(&index, b_knights);
-		midgame_score += piece_square_tables[MIDGAME][BLACK][KNIGHT][index];
-		endgame_score += piece_square_tables[ENDGAME][BLACK][KNIGHT][index];
-		b_knights &= b_knights - 1;
-	}
-
-	uint64_t w_bishops = b->bbs[BISHOP][WHITE];
-	while (w_bishops != 0ULL)
-	{
-		_BitScanForward64(&index, w_bishops);
-		mobility = __popcnt64(attacks::get_bishop_attacks(index, b->pieces[2]));
-		midgame_score += piece_square_tables[MIDGAME][WHITE][BISHOP][index] + mobility;
-		endgame_score += piece_square_tables[ENDGAME][WHITE][BISHOP][index] + mobility;
-		w_bishops &= w_bishops - 1;
-	}
-	
-	uint64_t b_bishops = b->bbs[BISHOP][BLACK];
-	while (b_bishops != 0ULL)
-	{
-		_BitScanForward64(&index, b_bishops);
-		mobility = -(int)__popcnt64(attacks::get_bishop_attacks(index, b->pieces[2]));
-		midgame_score += piece_square_tables[MIDGAME][BLACK][BISHOP][index] + mobility;
-		endgame_score += piece_square_tables[ENDGAME][BLACK][BISHOP][index] + mobility;
-		b_bishops &= b_bishops - 1;
-	}
-	
-	uint64_t w_rooks = b->bbs[ROOK][WHITE];
-	while (w_rooks != 0ULL)
-	{
-		_BitScanForward64(&index, w_rooks);
-		mobility = __popcnt64(attacks::get_rook_attacks(index, b->pieces[2]));
-		midgame_score += piece_square_tables[MIDGAME][WHITE][ROOK][index] + (mobility / 2);
-		endgame_score += piece_square_tables[ENDGAME][WHITE][ROOK][index] + mobility;
-		w_rooks &= w_rooks - 1;
-	}
-	
-	uint64_t b_rooks = b->bbs[ROOK][BLACK];
-	while (b_rooks != 0ULL)
-	{
-		_BitScanForward64(&index, b_rooks);
-		mobility = -(int)__popcnt64(attacks::get_rook_attacks(index, b->pieces[2]));
-		midgame_score += piece_square_tables[MIDGAME][BLACK][ROOK][index] + (mobility / 2);
-		endgame_score += piece_square_tables[ENDGAME][BLACK][ROOK][index] + mobility;
-		b_rooks &= b_rooks - 1;
-	}
-	
-	uint64_t w_queens = b->bbs[QUEEN][WHITE];
-	while (w_queens != 0ULL)
-	{
-		_BitScanForward64(&index, w_queens);
-		mobility = __popcnt64(attacks::get_rook_attacks(index, b->pieces[2]) | attacks::get_bishop_attacks(index, b->pieces[2]));
-		midgame_score += piece_square_tables[MIDGAME][WHITE][QUEEN][index] + (mobility / 4);
-		endgame_score += piece_square_tables[ENDGAME][WHITE][QUEEN][index] + (mobility / 2);
-		w_queens &= w_queens - 1;
-	}
-	
-	uint64_t b_queens = b->bbs[QUEEN][BLACK];
-	while (b_queens != 0ULL)
-	{
-		_BitScanForward64(&index, b_queens);
-		mobility = -(int)__popcnt64(attacks::get_rook_attacks(index, b->pieces[2]) | attacks::get_bishop_attacks(index, b->pieces[2]));
-		midgame_score += piece_square_tables[MIDGAME][BLACK][QUEEN][index] + (mobility / 4);
-		endgame_score += piece_square_tables[ENDGAME][BLACK][QUEEN][index] + (mobility / 2);
-		b_queens &= b_queens - 1;
-	}
-	
-	_BitScanForward64(&index, b->bbs[KING][WHITE]);
-	midgame_score += piece_square_tables[MIDGAME][WHITE][KING][index];
-	endgame_score += piece_square_tables[ENDGAME][WHITE][KING][index];
-	
-	_BitScanForward64(&index, b->bbs[KING][BLACK]);
-	midgame_score += piece_square_tables[MIDGAME][BLACK][KING][index];
-	endgame_score += piece_square_tables[ENDGAME][BLACK][KING][index];
-	
-	int score = (midgame_score * (phase) + endgame_score * (76 - phase)) / 76;
+	int score = (midgame_score * (phase)+endgame_score * (76 - phase)) / 76;
 	return (b->side_to_move) ? -score : score;
 }
 
@@ -180,35 +56,35 @@ void evaluator::init_tables()
 {
 	for (int i = 0; i < 64; i++)
 	{
-		piece_square_tables[MIDGAME][WHITE][PAWN][i] = pawn_pst_mg[(7 - i / 8) * 8 + i % 8];
-		piece_square_tables[MIDGAME][BLACK][PAWN][i] = -pawn_pst_mg[i];
-		piece_square_tables[ENDGAME][WHITE][PAWN][i] = pawn_pst_eg[(7 - i / 8) * 8 + i % 8];
-		piece_square_tables[ENDGAME][BLACK][PAWN][i] = -pawn_pst_eg[i];
-		
-		piece_square_tables[MIDGAME][WHITE][KNIGHT][i] = knight_pst_mg[(7 - i / 8) * 8 + i % 8];
-		piece_square_tables[MIDGAME][BLACK][KNIGHT][i] = -knight_pst_mg[i];
-		piece_square_tables[ENDGAME][WHITE][KNIGHT][i] = knight_pst_eg[(7 - i / 8) * 8 + i % 8];
-		piece_square_tables[ENDGAME][BLACK][KNIGHT][i] = -knight_pst_eg[i];
-		
-		piece_square_tables[MIDGAME][WHITE][BISHOP][i] = bishop_pst_mg[(7 - i / 8) * 8 + i % 8];
-		piece_square_tables[MIDGAME][BLACK][BISHOP][i] = -bishop_pst_mg[i];
-		piece_square_tables[ENDGAME][WHITE][BISHOP][i] = bishop_pst_eg[(7 - i / 8) * 8 + i % 8];
-		piece_square_tables[ENDGAME][BLACK][BISHOP][i] = -bishop_pst_eg[i];
-		
-		piece_square_tables[MIDGAME][WHITE][ROOK][i] = rook_pst_mg[(7 - i / 8) * 8 + i % 8];
-		piece_square_tables[MIDGAME][BLACK][ROOK][i] = -rook_pst_mg[i];
-		piece_square_tables[ENDGAME][WHITE][ROOK][i] = rook_pst_eg[(7 - i / 8) * 8 + i % 8];
-		piece_square_tables[ENDGAME][BLACK][ROOK][i] = -rook_pst_eg[i];
-		
-		piece_square_tables[MIDGAME][WHITE][QUEEN][i] = queen_pst_mg[(7 - i / 8) * 8 + i % 8];
-		piece_square_tables[MIDGAME][BLACK][QUEEN][i] = -queen_pst_mg[i];
-		piece_square_tables[ENDGAME][WHITE][QUEEN][i] = queen_pst_eg[(7 - i / 8) * 8 + i % 8];
-		piece_square_tables[ENDGAME][BLACK][QUEEN][i] = -queen_pst_eg[i];
-		
-		piece_square_tables[MIDGAME][WHITE][KING][i] = king_pst_mg[(7 - i / 8) * 8 + i % 8];
-		piece_square_tables[MIDGAME][BLACK][KING][i] = -king_pst_mg[i];
-		piece_square_tables[ENDGAME][WHITE][KING][i] = king_pst_eg[(7 - i / 8) * 8 + i % 8];
-		piece_square_tables[ENDGAME][BLACK][KING][i] = -king_pst_eg[i];
+		piece_square_tables[MIDGAME][WHITE_PAWN][i] = pawn_pst_mg[(7 - i / 8) * 8 + i % 8];
+		piece_square_tables[MIDGAME][BLACK_PAWN][i] = -pawn_pst_mg[i];
+		piece_square_tables[ENDGAME][WHITE_PAWN][i] = pawn_pst_eg[(7 - i / 8) * 8 + i % 8];
+		piece_square_tables[ENDGAME][BLACK_PAWN][i] = -pawn_pst_eg[i];
+
+		piece_square_tables[MIDGAME][WHITE_KNIGHT][i] = knight_pst_mg[(7 - i / 8) * 8 + i % 8];
+		piece_square_tables[MIDGAME][BLACK_KNIGHT][i] = -knight_pst_mg[i];
+		piece_square_tables[ENDGAME][WHITE_KNIGHT][i] = knight_pst_eg[(7 - i / 8) * 8 + i % 8];
+		piece_square_tables[ENDGAME][BLACK_KNIGHT][i] = -knight_pst_eg[i];
+
+		piece_square_tables[MIDGAME][WHITE_BISHOP][i] = bishop_pst_mg[(7 - i / 8) * 8 + i % 8];
+		piece_square_tables[MIDGAME][BLACK_BISHOP][i] = -bishop_pst_mg[i];
+		piece_square_tables[ENDGAME][WHITE_BISHOP][i] = bishop_pst_eg[(7 - i / 8) * 8 + i % 8];
+		piece_square_tables[ENDGAME][BLACK_BISHOP][i] = -bishop_pst_eg[i];
+
+		piece_square_tables[MIDGAME][WHITE_ROOK][i] = rook_pst_mg[(7 - i / 8) * 8 + i % 8];
+		piece_square_tables[MIDGAME][BLACK_ROOK][i] = -rook_pst_mg[i];
+		piece_square_tables[ENDGAME][WHITE_ROOK][i] = rook_pst_eg[(7 - i / 8) * 8 + i % 8];
+		piece_square_tables[ENDGAME][BLACK_ROOK][i] = -rook_pst_eg[i];
+
+		piece_square_tables[MIDGAME][WHITE_QUEEN][i] = queen_pst_mg[(7 - i / 8) * 8 + i % 8];
+		piece_square_tables[MIDGAME][BLACK_QUEEN][i] = -queen_pst_mg[i];
+		piece_square_tables[ENDGAME][WHITE_QUEEN][i] = queen_pst_eg[(7 - i / 8) * 8 + i % 8];
+		piece_square_tables[ENDGAME][BLACK_QUEEN][i] = -queen_pst_eg[i];
+
+		piece_square_tables[MIDGAME][WHITE_KING][i] = king_pst_mg[(7 - i / 8) * 8 + i % 8];
+		piece_square_tables[MIDGAME][BLACK_KING][i] = -king_pst_mg[i];
+		piece_square_tables[ENDGAME][WHITE_KING][i] = king_pst_eg[(7 - i / 8) * 8 + i % 8];
+		piece_square_tables[ENDGAME][BLACK_KING][i] = -king_pst_eg[i];
 	}
 }
 

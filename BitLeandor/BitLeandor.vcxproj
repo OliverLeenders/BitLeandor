@@ -51,6 +51,7 @@
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
+    <ProfileGuidedOptimization>PGOInstrument</ProfileGuidedOptimization>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -149,6 +150,7 @@
     <ClInclude Include="board_state.h" />
     <ClInclude Include="constants.h" />
     <ClInclude Include="evaluator.h" />
+    <ClInclude Include="uci_io.h" />
     <ClInclude Include="movelist.h" />
     <ClInclude Include="magics.h" />
     <ClInclude Include="movegen.h" />
@@ -175,6 +177,7 @@
     <ClCompile Include="search.cpp" />
     <ClCompile Include="transposition_table.cpp" />
     <ClCompile Include="tt_entry.cpp" />
+    <ClCompile Include="uci_io.cpp" />
     <ClCompile Include="utility.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

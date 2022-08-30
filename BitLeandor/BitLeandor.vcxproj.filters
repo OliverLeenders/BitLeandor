@@ -63,6 +63,9 @@
     <ClInclude Include="constants.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="uci_io.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="attacks.cpp">
@@ -107,10 +110,13 @@
     <ClCompile Include="scorelist.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="transposition_table.cpp">
-      <Filter>Headerdateien</Filter>
-    </ClCompile>
     <ClCompile Include="tt_entry.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="transposition_table.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="uci_io.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
   </ItemGroup>

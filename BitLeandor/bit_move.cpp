@@ -1,6 +1,6 @@
 #include "bit_move.h"
 
-bit_move::bit_move(uint32_t origin, uint32_t target, uint32_t flags, uint32_t type, uint32_t captured_type)
+bit_move::bit_move(uint8_t origin, uint8_t target, uint8_t flags, uint8_t type, uint8_t captured_type)
 {
 	this->move = ((type & 15) << 20) | ((captured_type & 15 ) << 16) | ((flags & 15) << 12) | ((origin & 63) << 6) | (target & 63);
 }
@@ -11,11 +11,11 @@ bit_move::bit_move() {
 
 bit_move::~bit_move() {}
 
-uint16_t bit_move::get_origin() {
+uint8_t bit_move::get_origin() {
 	return (this->move >> 6) & 63;
 }
 
-uint16_t bit_move::get_target() {
+uint8_t bit_move::get_target() {
 	return this->move & 63;
 }
 

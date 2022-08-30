@@ -5,12 +5,12 @@
 class bit_move
 {
 public:
-	bit_move(uint32_t origin, uint32_t target, uint32_t flags, uint32_t type, uint32_t captured_type);
+	bit_move(uint8_t origin, uint8_t target, uint8_t flags, uint8_t type, uint8_t captured_type);
 	// 0000 0000 0000 00000000 00000000
 	// t    ct   fl   target   origin
 	bit_move();
-	uint16_t get_origin();
-	uint16_t get_target();
+	uint8_t get_origin();
+	uint8_t get_target();
 	uint8_t get_flags();
 	uint8_t get_captured_type();
 	uint8_t get_piece_type();

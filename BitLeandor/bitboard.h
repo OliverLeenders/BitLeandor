@@ -7,6 +7,7 @@
 #include "bit_move.h"
 #include "board_state.h"
 #include "constants.h"
+#include "transposition_table.h"
 
 class bitboard
 {
@@ -14,10 +15,12 @@ public:
 	bitboard();
 
 	uint64_t bbs[6][2] = { {0, 0}, {0, 0}, {0, 0} , {0, 0} , {0, 0}, {0, 0} };
-	int types[64] = { 6 };
+	int types[64] = { EMPTY };
+	int pieces[64] = { EMPTY_PIECE };
 
 	// occupancy bitboards
-	uint64_t pieces[3] = { 0 };
+	uint64_t occupancy[3] = { 0 };
+	uint64_t zobrist_key = 0;
 	bool side_to_move = 0;
 	void pos_from_fen(std::string fen);
 	int char_to_rank(char c);
@@ -40,23 +43,18 @@ public:
 	bool is_legal(bit_move* m)
 	{
 		uint8_t flags = m->get_flags();
-		uint16_t origin = m->get_origin();
-		uint16_t target = m->get_target();
+		uint8_t origin = m->get_origin();
+		uint8_t target = m->get_target();
+		uint8_t type = m->get_piece_type();
 		uint64_t origin_mask = 1ULL << origin;
-		uint64_t target_mask = 1ULL << target;
-		uint8_t piece_type = m->get_piece_type();
-		uint8_t captured_type = m->get_captured_type();
-
 		// if the move was not generated we need to check
 		// the availability of a piece which is able to move 
 		// to that square (and more) 
 
 		if (!was_generated) {
-			if ((pieces[side_to_move] & origin_mask) == 0ULL) {
+			if (type != types[origin]) {
+				// std::cout << "illegal" << bit_move::to_string(*m) << std::endl;
 				return false;
-			}
-			else {
-				// find out which piece ...
 			}
 		}
 		if (flags == bit_move::queenside_castle) {
@@ -81,6 +79,9 @@ public:
 	}
 	void make_move(bit_move* m);
 	void unmake_move();
+	void make_null_move();
+	void unmake_null_move();
+	void update_zobrist_key(bit_move* m);
 	uint8_t piece_type_from_index(unsigned long i);
 	std::vector<board_state> game_history = {};
 	uint16_t fifty_move_rule_counter = 0;
