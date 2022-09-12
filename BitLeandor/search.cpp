@@ -194,17 +194,7 @@ int search::alpha_beta(bitboard* b, int depth, int alpha, int beta, int ply)
 	}
 
 	int static_eval = evaluator::eval(b);
-	/*if (depth <= 3 && !pv && !is_check) {
-		if (static_eval + 190 * depth < beta) {
-			int razor_score = quiescence(b, alpha + 1, beta, ply);
-			if (razor_score - 190 < beta) {
-				return razor_score;
-			}
-			else if (depth == 1) {
-				return beta;
-			}
-		}
-	}*/
+	
 
 
 	bool post_null_move = b->game_history.size() > 0 && b->game_history.back().last_move.move == 0;
