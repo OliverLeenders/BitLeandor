@@ -53,7 +53,7 @@ int transposition_table::probe(uint64_t key, int depth, int ply, int alpha, int 
 		if (entry->depth >= depth) {
 			if (entry->type == tt_entry::EXACT) {
 				int score = entry->score;
-				if (std::abs(score) >= 100000) {
+				if (std::abs(score) >= 90000) {
 					return score - Utility::sgn(score) * ply;
 				}
 				else {
@@ -80,7 +80,7 @@ int transposition_table::probe_qsearch(uint64_t key, int ply, int alpha, int bet
 		m->move = entry->hash_move.move;
 		if (entry->type == tt_entry::EXACT) {
 			int score = entry->score;
-			if (std::abs(score) >= 100000) {
+			if (std::abs(score) >= 90000) {
 				return score - Utility::sgn(score) * ply;
 			}
 			else {

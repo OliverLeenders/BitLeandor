@@ -15,12 +15,14 @@ bitboard b = bitboard();
 int main() {
 	// initializing attack tables
 	attacks::init_attack_tables();
+
 	// generate mafics
 	Utility::generate_magic_attacks();
 	// initializing evaluation tables
 	evaluator::init_tables();
 	// initializing transposition table
 	transposition_table::init_keys();
+	search::init_lmr();
 
 
 	std::string pos = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -87,6 +89,14 @@ void uci_console() {
 				}
 				else if (split->at(1) == "kiwipete") {
 					b.pos_from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1");
+					if (split->size() >= 3) {
+						if (split->at(2) == "moves") {
+							for (int i = 3; i < split->size(); i++) {
+								parse_and_make_move(split, i);
+							}
+						}
+
+					}
 				}
 			}
 
@@ -102,13 +112,29 @@ void uci_console() {
 						search::search_iterative_deepening(&b, 256);
 						search::ENDTIME = {};
 					}
+					if (split->size() >= 9 && split->at(1) == "wtime" && split->at(3) == "btime" && split->at(5) == "winc" && split->at(7) == "binc") {
+						int w_time = std::stoi((*split)[2]);
+						int b_time = std::stoi((*split)[4]);
+						int w_inc = std::stoi((*split)[6]);
+						int b_inc = std::stoi((*split)[8]);
+						int time = 0;
+						if (b.side_to_move) {
+							time = std::min(b_time, (b_time + 25 * b_inc) / 25);
+						}
+						else {
+							time = std::min(w_time, (w_time + 25 * w_inc) / 25);
+						}
+						search::ENDTIME = std::chrono::high_resolution_clock().now() + std::chrono::milliseconds(time);
+						search::search_iterative_deepening(&b, 256);
+						search::ENDTIME = {};
+					}
 					else if (split->at(1) == "perft") {
 						int depth = std::stoi(split->at(2));
 						perft::run_perft_console(&b, depth);
 					}
 				}
-				else {
-					search::search_iterative_deepening(&b, 10);
+				else if (split->size() == 2 && split->at(1) == "infinite") {
+					search::search_iterative_deepening(&b, 256);
 				}
 			}
 			else if (split->at(0) == "d") {
@@ -136,7 +162,7 @@ void parse_and_make_move(std::vector<std::string>* split, int i)
 	bool is_castle_queenside = b.types[origin] == KING && target == origin - 2;
 	bool is_double_pawn_push = b.types[origin] == PAWN && (target == origin + 16 || target == origin - 16);
 	uint8_t promotion_type = 0;
-	bool is_ep = target == b.ep_target_square;
+	bool is_ep = target == b.ep_target_square && b.types[origin] == PAWN;
 	uint8_t captured_type = b.types[target];
 
 	if (is_promotion) {

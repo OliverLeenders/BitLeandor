@@ -9,6 +9,7 @@ board_state::board_state(uint64_t set_z_hash, char set_castling_rights, char set
 	fifty_move_counter = set_fifty_mr_counter;
 }
 
+
 board_state::~board_state()
 {
 }

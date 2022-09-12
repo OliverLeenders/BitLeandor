@@ -1,5 +1,7 @@
 #pragma 
 #include <chrono>
+#include <io.h>
+
 
 #include "bitboard.h"
 #include "evaluator.h"
@@ -17,6 +19,9 @@ public:
 	static const int CAPTURE_SCORE = 100000;
 	static const int KILLER_1_SCORE = 10000;
 	static const int KILLER_2_SCORE = 9999;
+	static int lmr[MAX_PV_SIZE][MAX_PV_SIZE];
+
+	static void init_lmr();
 
 	static int DEPTH;
 	static std::chrono::time_point<std::chrono::steady_clock> ENDTIME;
@@ -31,6 +36,7 @@ public:
 	static bool stop_now;
 
 	static int NODES_SEARCHED;
+	static int QNODES_SEARCHED;
 	static inline int get_pv_index(int ply)  {
 		return ((MAX_PV_SIZE * 2) + 1 - ply) / 2; // depth_left * depth_left / 2
 	}

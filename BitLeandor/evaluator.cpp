@@ -5,13 +5,22 @@ const int evaluator::piece_values[2][12]= {
 	{ 120, 310, 340, 550, 1000, 0 , -120, -310, -340, -550, -1000, 0}
 };
 
-const int evaluator::game_phase_values[6] = {
+const uint8_t evaluator::game_phase_values[6] = {
 	0,
 	4, // 16
 	4, // 16
 	6, // 24
 	10, // 20
 	0
+};
+
+const uint8_t evaluator::mobility_divisors[3] = {
+	// bishop
+	2,
+	// rook
+	4,
+	// queen
+	6
 };
 // total : 16 + 16 + 24 + 20 = 76
 
@@ -35,18 +44,60 @@ int evaluator::eval(bitboard* b)
 	int midgame_score = 0;
 	int endgame_score = 0;
 
-	int phase = 0;
+	uint8_t phase = 0;
 
 	unsigned long index = 0;
-	uint64_t occ = b->occupancy[2];
-	while (occ != 0ULL) {
-		_BitScanForward64(&index, occ);
-		uint8_t piece = b->pieces[index];
+	uint64_t occ = b->occupancy[2]; 
+	uint8_t piece = EMPTY;
+	while (_BitScanForward64(&index, occ)) {
+		piece = b->pieces[index];
 		midgame_score += piece_values[MIDGAME][piece] + piece_square_tables[MIDGAME][piece][index];
 		endgame_score += piece_values[ENDGAME][piece] + piece_square_tables[ENDGAME][piece][index];
 		phase += game_phase_values[b->types[index]];
 		occ &= occ - 1;
 	}
+	/*
+	uint64_t w_queens = b->bbs[QUEEN][WHITE];
+	while (_BitScanForward(&index, w_queens)) {
+		midgame_score += mobility_factors[QUEEN - 2] * (__popcnt64(attacks::get_rook_attacks(index, occ)) + __popcnt64(attacks::get_bishop_attacks(index, occ))) / 8;
+		endgame_score += mobility_factors[QUEEN - 2] * (__popcnt64(attacks::get_rook_attacks(index, occ)) + __popcnt64(attacks::get_bishop_attacks(index, occ))) / 4;
+		w_queens &= w_queens - 1;
+	}
+	
+	uint64_t b_queens = b->bbs[QUEEN][BLACK];
+	while (_BitScanForward(&index, b_queens)) {
+		midgame_score -= mobility_factors[QUEEN - 2] * (__popcnt64(attacks::get_rook_attacks(index, occ)) + __popcnt64(attacks::get_bishop_attacks(index, occ))) / 8;
+		endgame_score -= mobility_factors[QUEEN - 2] * (__popcnt64(attacks::get_rook_attacks(index, occ)) + __popcnt64(attacks::get_bishop_attacks(index, occ))) / 4;
+		b_queens &= b_queens - 1;
+	}
+	
+	uint64_t w_rooks = b->bbs[ROOK][WHITE];
+	while (_BitScanForward(&index, w_rooks)) {
+		midgame_score += mobility_factors[ROOK - 2] * __popcnt64(attacks::get_rook_attacks(index, occ)) / 5;
+		endgame_score += mobility_factors[ROOK - 2] * __popcnt64(attacks::get_rook_attacks(index, occ)) / 2;
+		w_rooks &= w_rooks - 1;
+	}
+
+	uint64_t b_rooks = b->bbs[ROOK][BLACK];
+	while (_BitScanForward(&index, b_rooks)) {
+		midgame_score -= mobility_factors[ROOK - 2] * __popcnt64(attacks::get_rook_attacks(index, occ)) / 5;
+		endgame_score -= mobility_factors[ROOK - 2] * __popcnt64(attacks::get_rook_attacks(index, occ)) / 2;
+		b_rooks &= b_rooks - 1;
+	}
+
+	uint64_t w_bishops = b->bbs[BISHOP][WHITE];
+	while (_BitScanForward(&index, w_bishops)) {
+		midgame_score += mobility_factors[BISHOP - 2] * __popcnt64(attacks::get_bishop_attacks(index, occ)) / 4;
+		endgame_score += mobility_factors[BISHOP - 2] * __popcnt64(attacks::get_bishop_attacks(index, occ)) / 2;
+		w_bishops &= w_bishops - 1;
+	}
+
+	uint64_t b_bishops = b->bbs[BISHOP][BLACK];
+	while (_BitScanForward(&index, b_bishops)) {
+		midgame_score -= mobility_factors[BISHOP - 2] * __popcnt64(attacks::get_bishop_attacks(index, occ)) / 4;
+		endgame_score -= mobility_factors[BISHOP - 2] * __popcnt64(attacks::get_bishop_attacks(index, occ)) / 2;
+		b_bishops &= b_bishops - 1;
+	}*/
 
 	int score = (midgame_score * (phase)+endgame_score * (76 - phase)) / 76;
 	return (b->side_to_move) ? -score : score;

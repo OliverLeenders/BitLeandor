@@ -9,6 +9,48 @@ uint64_t attacks::rook_magics[64] = { 0ULL };
 uint64_t attacks::bishop_magics[64] = { 0ULL };
 uint64_t attacks::rook_attacks[64][4096] = { 0ULL };
 uint64_t attacks::bishop_attacks[64][512] = { 0ULL };
+uint64_t attacks::squares_between[64][64] = { 0ULL };
+
+void attacks::init_squares_between()
+{
+	for (int i = 0; i < 64; i++) {
+		for (int j = 0; j < 64; j++) {
+			squares_between[i][j] = 0ULL;
+			if (i == j) {
+				continue;
+			}
+			int file_diff = std::abs((i % 8) - (j % 8));
+			int rank_diff = std::abs((i / 8) - (j / 8));
+			// if the squares are on the same file
+			if (file_diff == 0) {
+				int min = std::min(i, j);
+				int max = std::max(i, j);
+				for (min+= 8; min < max; min += 8) {
+					squares_between[i][j] |= (1ULL << min);
+				}
+			}
+			// if the squares are on the same rank
+			else if (rank_diff == 0) {
+				int min = std::min(i, j);
+				int max = std::max(i, j);
+				for (min++; min < max; min++) {
+					squares_between[i][j] |= (1ULL << min);
+				}
+			}
+			// if the squares are on the same diagonal
+			else if (file_diff == rank_diff && file_diff > 0) {
+				
+				int max = std::max(i, j);
+				int min = std::min(i, j);
+
+				int dir = (min % 8 < max % 8) ? 9 : 7;
+				for (min += dir; min < max; min += dir) {
+					squares_between[i][j] |= (1ULL << min);
+				}
+			}
+		}
+	}	
+}
 
 void attacks::init_attack_tables() {
 	init_king_attacks();
@@ -16,6 +58,7 @@ void attacks::init_attack_tables() {
 	init_pawn_attacks();
 	init_rook_attack_masks();
 	init_bishop_attack_masks();
+	init_squares_between();
 	return;
 }
 

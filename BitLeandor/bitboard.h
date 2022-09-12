@@ -26,6 +26,14 @@ public:
 	int char_to_rank(char c);
 	int char_to_file(char c);
 	bool is_square_attacked(int square, bool side_to_move);
+	
+	template<bool side_to_move>
+	bool pawns_before_back_rank() {
+		uint64_t rank = (side_to_move) ? bitboard_util::second_rank : bitboard_util::seventh_rank;
+		uint64_t promotion_candidates = bbs[PAWN][side_to_move] & rank;
+		return promotion_candidates != 0ULL;
+	}
+	
 	void print_board();
 	~bitboard();
 	char castling_rights = 0;
@@ -38,6 +46,8 @@ public:
 	};
 	int ep_target_square = -1;
 
+	bool is_sane();
+
 	// templated is legal function needs to be in header-file for some stupid c++ reason...
 	template<bool was_generated>
 	bool is_legal(bit_move* m)
@@ -46,15 +56,73 @@ public:
 		uint8_t origin = m->get_origin();
 		uint8_t target = m->get_target();
 		uint8_t type = m->get_piece_type();
+		uint8_t piece = (side_to_move) ? type + BLACK_PAWN : type;
+		uint8_t captured_type = m->get_captured_type();
+		uint8_t captured_piece = (side_to_move) ? captured_type : captured_type + BLACK_PAWN;
 		uint64_t origin_mask = 1ULL << origin;
+	
 		// if the move was not generated we need to check
 		// the availability of a piece which is able to move 
-		// to that square (and more) 
+		// to that square (and more) stil incomplete -- does
+		// not check vacancy of sliding piece rays
 
 		if (!was_generated) {
-			if (type != types[origin]) {
-				// std::cout << "illegal" << bit_move::to_string(*m) << std::endl;
+			if (origin == target) {
 				return false;
+			}
+			if (piece != pieces[origin]) {
+				return false;
+			}
+			if (flags == bit_move::quiet_move) {
+				if (pieces[target] != EMPTY_PIECE) {
+					return false;
+				}
+			}
+			else if (flags == bit_move::capture || flags >= bit_move::knight_capture_promotion) {
+				if (captured_piece != pieces[target]) { // this one is critical
+					return false;
+				}
+			}
+			else if (flags == bit_move::ep_capture) {
+				if (target != ep_target_square) {
+					return false;
+				}
+			}
+			else if (flags == bit_move::double_pawn_push) {
+				if (pieces[target] != EMPTY_PIECE || pieces[target - ((side_to_move) ? -8 : 8)] != EMPTY_PIECE) {
+					return false;
+				}
+			}
+			else if (flags == bit_move::kingside_castle) {
+				// if we have no castling right
+				if (!(this->castling_rights & ((side_to_move) ? b_kingside : w_kingside))) {
+					return false;
+				} 
+				// if the squares are occupied
+				if (pieces[origin + 1] != EMPTY_PIECE || pieces[origin + 2] != EMPTY_PIECE) {
+					return false;
+				}
+			}
+			else if (flags == bit_move::queenside_castle) {
+				// if we have no castling right
+				if (!(this->castling_rights & ((side_to_move) ? b_queenside : w_queenside))) {
+					return false;
+				}
+				// if the squares are occupied
+				if (pieces[origin - 1] != EMPTY_PIECE || pieces[origin - 2] != EMPTY_PIECE || pieces[origin - 3] != EMPTY_PIECE) {
+					return false;
+				}
+			}
+			if (types[origin] >= BISHOP && types[origin] <= QUEEN) {
+				if ((attacks::squares_between[origin][target] & occupancy[2]) != 0ULL) {
+					/*std::cout << std::endl;
+					print_board();
+					bitboard_util::print_bitboard(attacks::squares_between[origin][target]);
+					std::cout << "Move: " << bit_move::to_string(*m) << std::endl;
+					*/
+					return false;
+				}
+
 			}
 		}
 		if (flags == bit_move::queenside_castle) {
