@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 
+inline int MATE = 100000;
 enum Colors : uint8_t{
 	WHITE = 0,
 	BLACK = 1

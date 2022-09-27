@@ -1,8 +1,8 @@
 #include "utility.h"
 
-Utility::Utility() {}
+utility::utility() {}
 
-void Utility::remove_first_occurance(std::list<int>* l, int i) {
+void utility::remove_first_occurance(std::list<int>* l, int i) {
 	std::list<int>::iterator itr;
 	bool not_removed = true;
 	for (itr = l->begin(); itr != l->end() && not_removed; ) {
@@ -17,7 +17,7 @@ void Utility::remove_first_occurance(std::list<int>* l, int i) {
 }
 
 
-uint64_t Utility::random_64_bit_num()
+uint64_t utility::random_64_bit_num()
 {
 	uint64_t num = 0;
 
@@ -29,9 +29,9 @@ uint64_t Utility::random_64_bit_num()
 	return num;
 }
 
-unsigned int Utility::random_state = 1804289383;
+unsigned int utility::random_state = 1804289383;
 
-unsigned int Utility::pseudo_rand_32_bit_num()
+unsigned int utility::pseudo_rand_32_bit_num()
 {
 	// get state
 	int num = random_state;
@@ -47,7 +47,7 @@ unsigned int Utility::pseudo_rand_32_bit_num()
 	return num;
 }
 
-uint64_t Utility::pseudo_rand_64_bit_num() {
+uint64_t utility::pseudo_rand_64_bit_num() {
 	uint64_t n_1, n_2, n_3, n_4;
 	n_1 = (uint64_t)(pseudo_rand_32_bit_num()) & 0xFFFFULL;
 	n_2 = (uint64_t)(pseudo_rand_32_bit_num()) & 0xFFFFULL;
@@ -56,19 +56,18 @@ uint64_t Utility::pseudo_rand_64_bit_num() {
 	return n_1 | (n_2 << 16) | (n_3 << 32) | (n_4 << 48);
 }
 
-uint64_t Utility::magic_num_candidate() {
+uint64_t utility::magic_num_candidate() {
 	return pseudo_rand_64_bit_num() & pseudo_rand_64_bit_num() & pseudo_rand_64_bit_num();
 }
 
-uint64_t Utility::generate_occupancy_by_index(int index, int bit_count, uint64_t attack_mask) {
+uint64_t utility::generate_occupancy_by_index(int index, int bit_count, uint64_t attack_mask) {
 	uint64_t occupancy = 0ULL;
 
 	for (int count = 0; count < bit_count; count++) {
-		unsigned long square; 
-		_BitScanForward64(&square, attack_mask);
-		if (bitboard_util::is_bit_set(attack_mask, square))
+		uint8_t square = BitScanForward64(attack_mask);
+		if (is_bit_set(attack_mask, square))
 		{
-			attack_mask ^= bitboard_util::set_bit(square);
+			attack_mask ^= set_bit(square);
 		}
 		else {
 			attack_mask ^= 0ULL;
@@ -80,7 +79,7 @@ uint64_t Utility::generate_occupancy_by_index(int index, int bit_count, uint64_t
 	return occupancy;
 }
 
-uint64_t Utility::generate_magic_number(int square, int relevant_bits, bool is_bishop) {
+uint64_t utility::generate_magic_number(int square, int relevant_bits, bool is_bishop) {
 	uint64_t occupancies[4096];
 	uint64_t attacks[4096];
 	uint64_t used_attacks[4096];
@@ -124,14 +123,14 @@ uint64_t Utility::generate_magic_number(int square, int relevant_bits, bool is_b
 	return 0ULL;
 }
 
-void Utility::generate_magic_attacks() {
+void utility::generate_magic_attacks() {
 	for (int square = 0; square < 64; square++) {
 		uint64_t current_mask = attacks::rook_attack_masks[square];
 		int relevant_bits = num_relevant_bits_rook[square];
 		int occupancy_indices = 1ULL << relevant_bits;
 		for (int i = 0; i < occupancy_indices; i++) {
 			uint64_t occupancy = generate_occupancy_by_index(i, relevant_bits, current_mask);
-			int magic_index = (occupancy * magics::rook_magics[square]) >> (64 - relevant_bits);
+			uint64_t magic_index = (occupancy * magics::rook_magics[square]) >> (64 - relevant_bits);
 			attacks::rook_attacks[square][magic_index] = attacks::compute_rook_attacks(square, occupancy);
 		}
 	}
@@ -141,14 +140,14 @@ void Utility::generate_magic_attacks() {
 		int occupancy_indices = 1ULL << relevant_bits;
 		for (int i = 0; i < occupancy_indices; i++) {
 			uint64_t occupancy = generate_occupancy_by_index(i, relevant_bits, current_mask);
-			int magic_index = (occupancy * magics::bishop_magics[square]) >> (64 - relevant_bits);
+			uint64_t magic_index = (occupancy * magics::bishop_magics[square]) >> (64 - relevant_bits);
 			attacks::bishop_attacks[square][magic_index] = attacks::compute_bishop_attacks(square, occupancy);
 		}
 	}
 	return;
 }
 
-void Utility::generate_magics() {
+void utility::generate_magics() {
 	for (int i = 0; i < 64; i++) {
 		uint64_t magic = generate_magic_number(i, num_relevant_bits_bishop[i], true);
 		std::cout << magic << "ULL," << std::endl;
@@ -160,7 +159,7 @@ void Utility::generate_magics() {
  *
  * \returns random bool
  */
-bool Utility::random_bool() {
+bool utility::random_bool() {
 	return rand() % 2;
 }
 
@@ -170,7 +169,7 @@ bool Utility::random_bool() {
 * \param v vector of strings
 * \param s string to split
 */
-void Utility::split_string(std::vector<std::string>* v, std::string s) {
+void utility::split_string(std::vector<std::string>* v, std::string s) {
 	std::string tmp = "";
 	for (int i = 0; i < s.length(); i++) {
 		if (s[i] != ' ') {
@@ -186,7 +185,7 @@ void Utility::split_string(std::vector<std::string>* v, std::string s) {
 	v->push_back(tmp);
 }
 
-const int Utility::num_relevant_bits_bishop[64] = {
+const int utility::num_relevant_bits_bishop[64] = {
 	6, 5, 5, 5, 5, 5, 5, 6,
 	5, 5, 5, 5, 5, 5, 5, 5,
 	5, 5, 7, 7, 7, 7, 5, 5,
@@ -197,7 +196,7 @@ const int Utility::num_relevant_bits_bishop[64] = {
 	6, 5, 5, 5, 5, 5, 5, 6
 };
 
-const int Utility::num_relevant_bits_rook[64] = {
+const int utility::num_relevant_bits_rook[64] = {
 	12, 11, 11, 11, 11, 11, 11, 12,
 	11, 10, 10, 10, 10, 10, 10, 11,
 	11, 10, 10, 10, 10, 10, 10, 11,
@@ -208,6 +207,6 @@ const int Utility::num_relevant_bits_rook[64] = {
 	12, 11, 11, 11, 11, 11, 11, 12
 };
 
-Utility::~Utility() {}
+utility::~utility() {}
 
 

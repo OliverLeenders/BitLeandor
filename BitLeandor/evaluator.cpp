@@ -1,6 +1,6 @@
 #include "evaluator.h"
 
-const int evaluator::piece_values[2][12]= {
+const int evaluator::piece_values[2][12] = {
 	{ 100, 300, 330, 480, 900, 0 , -100, -300, -330, -480, -900, 0 },
 	{ 120, 310, 340, 550, 1000, 0 , -120, -310, -340, -550, -1000, 0}
 };
@@ -14,18 +14,37 @@ const uint8_t evaluator::game_phase_values[6] = {
 	0
 };
 
-const uint8_t evaluator::mobility_divisors[3] = {
+const uint8_t evaluator::mobility_divisors[6] = {
+	1,
+	1,
 	// bishop
 	2,
 	// rook
 	4,
 	// queen
-	6
+	6,
+	1
 };
 // total : 16 + 16 + 24 + 20 = 76
 
-int evaluator::piece_square_tables[2][12][64] = { 0 };
+int evaluator::piece_square_tables[2][12][64] = { {{0}} };
+uint64_t evaluator::front_spans[2][64] = { {0} };
+uint64_t evaluator::attack_front_spans[2][64] = { {0 } };
 
+
+transposition_table evaluator::pawn_tt = transposition_table(4096 * 2);
+int evaluator::manhattan_distance[64][64] = { {0} };
+
+const int evaluator::center_manhattan_distance[64] = {
+	6, 5, 4, 3, 3, 4, 5, 6,
+	5, 4, 3, 2, 2, 3, 4, 5,
+	4, 3, 2, 1, 1, 2, 3, 4,
+	3, 2, 1, 0, 0, 1, 2, 3,
+	3, 2, 1, 0, 0, 1, 2, 3,
+	4, 3, 2, 1, 1, 2, 3, 4,
+	5, 4, 3, 2, 2, 3, 4, 5,
+	6, 5, 4, 3, 3, 4, 5, 6
+};
 
 const int evaluator::king_pst_eg[64] = {
 	-74, -35, -18, -18, -11,  15,   4, -17,
@@ -46,61 +65,210 @@ int evaluator::eval(bitboard* b)
 
 	uint8_t phase = 0;
 
-	unsigned long index = 0;
-	uint64_t occ = b->occupancy[2]; 
+	uint8_t index = 0;
+	uint64_t occ = b->occupancy[2];
 	uint8_t piece = EMPTY;
-	while (_BitScanForward64(&index, occ)) {
+	uint8_t wkp = BitScanForward64(b->bbs[KING][WHITE]);
+	uint8_t bkp = BitScanForward64(b->bbs[KING][BLACK]);
+
+	if (b->occupancy[2] == (b->bbs[KING][WHITE] | b->bbs[KING][BLACK])) {
+		return 0;
+	}
+	else if ((b->bbs[PAWN][WHITE] | b->bbs[PAWN][BLACK]) == 0ULL) {
+
+		//**************************************************************//
+		//																//
+		//  return 0 if endgame is drawn								//
+		//																//
+		//**************************************************************//
+
+		// check KR-KR
+		if (b->occupancy[2] == (b->bbs[KING][WHITE] | b->bbs[KING][BLACK] | b->bbs[ROOK][WHITE] | b->bbs[ROOK][BLACK])
+			&& __popcnt64(b->bbs[ROOK][WHITE]) == 1
+			&& __popcnt64(b->bbs[ROOK][BLACK]) == 1) {
+			return 0;
+		}
+		// check KNN-K
+		if (b->occupancy[2] == (b->bbs[KING][WHITE] | b->bbs[KING][BLACK] | b->bbs[KNIGHT][WHITE] | b->bbs[KNIGHT][BLACK])
+			&& (
+				(__popcnt64(b->bbs[KNIGHT][WHITE]) <= 2
+					&& __popcnt64(b->bbs[KNIGHT][BLACK]) == 0)
+				||
+				(__popcnt64(b->bbs[KNIGHT][WHITE]) == 0
+					&& __popcnt64(b->bbs[KNIGHT][BLACK]) <= 2))) {
+			return 0;
+		}
+		// check KN-KB
+		if (b->occupancy[2] == (b->bbs[KING][WHITE] | b->bbs[KING][BLACK] | b->bbs[KNIGHT][WHITE] | b->bbs[KNIGHT][BLACK] | b->bbs[BISHOP][WHITE] | b->bbs[BISHOP][BLACK])
+			&& (
+				(__popcnt64(b->bbs[KNIGHT][WHITE]) == 1
+					&& __popcnt64(b->bbs[KNIGHT][BLACK]) == 0
+					&& __popcnt64(b->bbs[BISHOP][BLACK]) == 1
+					&& __popcnt64(b->bbs[BISHOP][WHITE]) == 0)
+				||
+				(__popcnt64(b->bbs[KNIGHT][WHITE]) == 0
+					&& __popcnt64(b->bbs[KNIGHT][BLACK]) == 1
+					&& __popcnt64(b->bbs[BISHOP][BLACK]) == 0
+					&& __popcnt64(b->bbs[BISHOP][WHITE]) == 1))) {
+			return 0;
+		}
+		// check KB-K
+		if (b->occupancy[2] == (b->bbs[KING][WHITE] | b->bbs[KING][BLACK] | b->bbs[BISHOP][WHITE] | b->bbs[BISHOP][BLACK])
+			&& (
+				(__popcnt64(b->bbs[BISHOP][WHITE]) == 1
+					&& __popcnt64(b->bbs[BISHOP][BLACK]) == 0)
+				||
+				(__popcnt64(b->bbs[BISHOP][WHITE]) == 0
+					&& __popcnt64(b->bbs[BISHOP][BLACK]) == 1))) {
+			return 0;
+		}
+	}
+
+	//******************************************************************//
+	// 																	//
+	// evaluate material + piece square tables							//
+	//																	//
+	//******************************************************************//
+
+
+	while (occ != 0ULL) {
+		index = BitScanForward64(occ);
 		piece = b->pieces[index];
 		midgame_score += piece_values[MIDGAME][piece] + piece_square_tables[MIDGAME][piece][index];
 		endgame_score += piece_values[ENDGAME][piece] + piece_square_tables[ENDGAME][piece][index];
 		phase += game_phase_values[b->types[index]];
 		occ &= occ - 1;
 	}
-	/*
+
+	//******************************************************************//
+	// 																	//
+	// evaluate mobility [needs to be tweaked]							//
+	//																	//
+	//******************************************************************//
+
 	uint64_t w_queens = b->bbs[QUEEN][WHITE];
-	while (_BitScanForward(&index, w_queens)) {
-		midgame_score += mobility_factors[QUEEN - 2] * (__popcnt64(attacks::get_rook_attacks(index, occ)) + __popcnt64(attacks::get_bishop_attacks(index, occ))) / 8;
-		endgame_score += mobility_factors[QUEEN - 2] * (__popcnt64(attacks::get_rook_attacks(index, occ)) + __popcnt64(attacks::get_bishop_attacks(index, occ))) / 4;
+	while (w_queens != 0ULL) {
+		index = BitScanForward64(w_queens);
+		midgame_score += (int)(__popcnt64(attacks::get_rook_attacks(index, occ)) + __popcnt64(attacks::get_bishop_attacks(index, occ))) / mobility_divisors[QUEEN];
+		endgame_score += (int)(__popcnt64(attacks::get_rook_attacks(index, occ)) + __popcnt64(attacks::get_bishop_attacks(index, occ))) / mobility_divisors[QUEEN];
 		w_queens &= w_queens - 1;
 	}
-	
+
 	uint64_t b_queens = b->bbs[QUEEN][BLACK];
-	while (_BitScanForward(&index, b_queens)) {
-		midgame_score -= mobility_factors[QUEEN - 2] * (__popcnt64(attacks::get_rook_attacks(index, occ)) + __popcnt64(attacks::get_bishop_attacks(index, occ))) / 8;
-		endgame_score -= mobility_factors[QUEEN - 2] * (__popcnt64(attacks::get_rook_attacks(index, occ)) + __popcnt64(attacks::get_bishop_attacks(index, occ))) / 4;
+	while (b_queens != 0ULL) {
+		index = BitScanForward64(b_queens);
+		midgame_score -= (int)(__popcnt64(attacks::get_rook_attacks(index, occ)) + __popcnt64(attacks::get_bishop_attacks(index, occ))) / mobility_divisors[QUEEN];
+		endgame_score -= (int)(__popcnt64(attacks::get_rook_attacks(index, occ)) + __popcnt64(attacks::get_bishop_attacks(index, occ))) / mobility_divisors[QUEEN];
 		b_queens &= b_queens - 1;
 	}
-	
+
 	uint64_t w_rooks = b->bbs[ROOK][WHITE];
-	while (_BitScanForward(&index, w_rooks)) {
-		midgame_score += mobility_factors[ROOK - 2] * __popcnt64(attacks::get_rook_attacks(index, occ)) / 5;
-		endgame_score += mobility_factors[ROOK - 2] * __popcnt64(attacks::get_rook_attacks(index, occ)) / 2;
+	while (w_rooks != 0ULL) {
+		index = BitScanForward64(w_rooks);
+		midgame_score += (int)__popcnt64(attacks::get_rook_attacks(index, occ)) / mobility_divisors[ROOK];
+		endgame_score += (int)__popcnt64(attacks::get_rook_attacks(index, occ)) / mobility_divisors[ROOK];
 		w_rooks &= w_rooks - 1;
 	}
 
 	uint64_t b_rooks = b->bbs[ROOK][BLACK];
-	while (_BitScanForward(&index, b_rooks)) {
-		midgame_score -= mobility_factors[ROOK - 2] * __popcnt64(attacks::get_rook_attacks(index, occ)) / 5;
-		endgame_score -= mobility_factors[ROOK - 2] * __popcnt64(attacks::get_rook_attacks(index, occ)) / 2;
+	while (b_rooks != 0ULL) {
+		index = BitScanForward64(b_rooks);
+		midgame_score -= (int)__popcnt64(attacks::get_rook_attacks(index, occ)) / mobility_divisors[ROOK];
+		endgame_score -= (int)__popcnt64(attacks::get_rook_attacks(index, occ)) / mobility_divisors[ROOK];
 		b_rooks &= b_rooks - 1;
 	}
 
 	uint64_t w_bishops = b->bbs[BISHOP][WHITE];
-	while (_BitScanForward(&index, w_bishops)) {
-		midgame_score += mobility_factors[BISHOP - 2] * __popcnt64(attacks::get_bishop_attacks(index, occ)) / 4;
-		endgame_score += mobility_factors[BISHOP - 2] * __popcnt64(attacks::get_bishop_attacks(index, occ)) / 2;
+	while (w_bishops != 0ULL) {
+		index = BitScanForward64(w_bishops);
+		midgame_score += (int)__popcnt64(attacks::get_bishop_attacks(index, occ)) / mobility_divisors[BISHOP];
+		endgame_score += (int)__popcnt64(attacks::get_bishop_attacks(index, occ)) / mobility_divisors[BISHOP];
 		w_bishops &= w_bishops - 1;
 	}
 
 	uint64_t b_bishops = b->bbs[BISHOP][BLACK];
-	while (_BitScanForward(&index, b_bishops)) {
-		midgame_score -= mobility_factors[BISHOP - 2] * __popcnt64(attacks::get_bishop_attacks(index, occ)) / 4;
-		endgame_score -= mobility_factors[BISHOP - 2] * __popcnt64(attacks::get_bishop_attacks(index, occ)) / 2;
+	while (b_bishops != 0ULL) {
+		index = BitScanForward64(b_bishops);
+		midgame_score -= (int)__popcnt64(attacks::get_bishop_attacks(index, occ)) / mobility_divisors[BISHOP];
+		endgame_score -= (int)__popcnt64(attacks::get_bishop_attacks(index, occ)) / mobility_divisors[BISHOP];
 		b_bishops &= b_bishops - 1;
-	}*/
+	}
 
-	int score = (midgame_score * (phase)+endgame_score * (76 - phase)) / 76;
+	//******************************************************************//
+	// 																	//
+	// special scoring for pawnless endgame	(found on CPW)				//
+	//																	//
+	//******************************************************************//
+
+	int late_eg_score = 0;
+	if (b->bbs[PAWN][WHITE] == 0ULL && b->bbs[PAWN][BLACK] == 0ULL && std::abs(endgame_score) > 250) {
+		late_eg_score = utility::sgn(endgame_score) * (int)(4.7 * center_manhattan_distance[(endgame_score > 0) ? bkp : wkp] + 1.6 * (14 - manhattan_distance[wkp][bkp]));
+		
+	}
+
+	//******************************************************************//
+	// 																	//
+	// combine endgame and midgame scores								//
+	//																	//
+	//******************************************************************//
+	
+	int score = (midgame_score * phase + (endgame_score + late_eg_score) * (76 - phase)) / 76 + eval_pawn_structure(b);
+
+	// scores need to be from the perspective of the side to move
+	// => so they are flipped if necessary
 	return (b->side_to_move) ? -score : score;
+}
+
+int evaluator::eval_pawn_structure(bitboard* b)
+{
+	bit_move m;
+	int hash_score = pawn_tt.probe_qsearch(b->pawn_hash_key, 0, -MATE, MATE, &m);
+	if (hash_score != transposition_table::VAL_UNKNOWN) {
+		return hash_score;
+	}
+
+	uint64_t w_pawns = b->bbs[PAWN][WHITE];
+	uint64_t b_pawns = b->bbs[PAWN][BLACK];
+
+	int score = 0;
+	bool open_files[2][8] = { {false} };
+	bool passed_pawns[2][8] = { {false} };
+	
+	
+	//******************************************************************//
+	// 																	//
+	// double pawn penalty + half open files							//
+	//																	//
+	// computes a penalty for double pawns, and checks which files are	// 
+	// half open at the same time										//
+	// 																	//
+	//******************************************************************//
+	
+	for (int i = 0; i < 8; i++) {
+		uint64_t file = files[i];
+		if ((w_pawns & file) != 0ULL) {
+			score -= (int)(__popcnt64(w_pawns & file) - 1) * 25;
+		}
+		else {
+			open_files[WHITE][i] = true;
+		}
+		if ((b_pawns & file) != 0ULL) {
+			score += (int)(__popcnt64(w_pawns & file) - 1) * 25;
+		}
+		else {
+			open_files[BLACK][i] = true;
+		}
+	}
+
+	
+	// initialize front/back array
+	unsigned long index = 0;
+	
+	
+
+	pawn_tt.set(b->pawn_hash_key, 0, 0, score, tt_entry::EXACT, bit_move());
+
+	return score;
 }
 
 void evaluator::init_tables()
@@ -136,6 +304,56 @@ void evaluator::init_tables()
 		piece_square_tables[MIDGAME][BLACK_KING][i] = -king_pst_mg[i];
 		piece_square_tables[ENDGAME][WHITE_KING][i] = king_pst_eg[(7 - i / 8) * 8 + i % 8];
 		piece_square_tables[ENDGAME][BLACK_KING][i] = -king_pst_eg[i];
+	}
+
+	// initialize manhattan distance table
+	for (int i = 0; i < 64; i++) {
+		for (int j = 0; j < 64; j++) {
+			manhattan_distance[i][j] = std::abs((i / 8) - (j / 8)) + std::abs((i % 8) - (j % 8));
+		}
+	}
+
+	// initialize spans
+	for (int i = 0; i < 64; i++) {
+		int forward = i + 8;
+		int backward = i - 8;
+		uint64_t front_span = 0ULL;
+		for (; forward < 64; forward += 8) {
+			front_span |= 1ULL << forward;
+		}
+		uint64_t back_span = 0ULL;
+		for (; backward >= 0; backward -= 8) {
+			back_span |= 1ULL << backward;
+		}
+		front_spans[WHITE][i] = front_span;
+		front_spans[BLACK][i] = back_span;
+	}
+
+	for (int i = 0; i < 64; i++) {
+		uint64_t front_span = 0ULL;
+		uint64_t back_span = 0ULL;
+		if (i % 8 != 0) {
+			int forward = i + 7;
+			int backward = i - 9;
+			for (; forward < 64; forward += 8) {
+				front_span |= 1ULL << forward;
+			}
+			for (; backward >= 0; backward -= 8) {
+				back_span |= 1ULL << backward;
+			}
+		}
+		if (i % 8 != 7) {
+			int forward = i + 9;
+			int backward = i - 7;
+			for (; forward < 64; forward += 8) {
+				front_span |= 1ULL << forward;
+			}
+			for (; backward >= 0; backward -= 8) {
+				back_span |= 1ULL << backward;
+			}
+		}
+		attack_front_spans[WHITE][i] = front_span;
+		attack_front_spans[BLACK][i] = back_span;
 	}
 }
 

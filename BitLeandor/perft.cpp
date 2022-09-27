@@ -19,7 +19,6 @@ uint64_t perft::run_perft(bitboard* b, int depth)
 		for (int i = 0; i < l.size; i++)
 		{
 			bit_move m = l.moves[i];
-			uint64_t prev_key = b->zobrist_key;
 			if (b->is_legal<true>(&m))
 			{
 				b->make_move(&m);
@@ -55,7 +54,6 @@ uint64_t perft::run_perft_console(bitboard* b, int depth)
 		for (int i = 0; i < l.size; i++)
 		{
 			m = l.moves[i];
-			uint64_t prev_key = b->zobrist_key;
 			if (b->is_legal<true>(&m))
 			{
 				std::cout << bit_move::to_string(m) << " (" << (int)m.get_flags() << "): ";

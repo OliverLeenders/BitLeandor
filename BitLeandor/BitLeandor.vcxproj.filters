@@ -74,9 +74,6 @@
     <ClCompile Include="bit_move.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="bitboard_util.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
     <ClCompile Include="bitboard.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>

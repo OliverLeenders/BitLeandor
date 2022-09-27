@@ -17,7 +17,7 @@ int main() {
 	attacks::init_attack_tables();
 
 	// generate mafics
-	Utility::generate_magic_attacks();
+	utility::generate_magic_attacks();
 	// initializing evaluation tables
 	evaluator::init_tables();
 	// initializing transposition table
@@ -44,7 +44,7 @@ void uci_console() {
 		std::string line = "";
 		std::getline(std::cin, line);
 		std::vector<std::string>* split = new std::vector<std::string>;
-		Utility::split_string(split, line);
+		utility::split_string(split, line);
 		if (split->size() >= 1) {
 			if (split->at(0) == "uci") {
 				std::cout << "id name Leandor 2.0" << std::endl;
@@ -65,7 +65,7 @@ void uci_console() {
 					b.pos_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 					if (split->size() >= 3) {
 						if (split->at(2) == "moves") {
-							for (int i = 3; i < split->size(); i++) {
+							for (size_t i = 3; i < split->size(); i++) {
 								parse_and_make_move(split, i);
 							}
 						}
@@ -80,7 +80,7 @@ void uci_console() {
 					b.pos_from_fen(fen);
 					if (split->size() >= 9) {
 						if (split->at(8) == "moves") {
-							for (int i = 9; i < split->size(); i++) {
+							for (size_t i = 9; i < split->size(); i++) {
 								parse_and_make_move(split, i);
 							}
 						}
@@ -91,7 +91,7 @@ void uci_console() {
 					b.pos_from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1");
 					if (split->size() >= 3) {
 						if (split->at(2) == "moves") {
-							for (int i = 3; i < split->size(); i++) {
+							for (size_t i = 3; i < split->size(); i++) {
 								parse_and_make_move(split, i);
 							}
 						}

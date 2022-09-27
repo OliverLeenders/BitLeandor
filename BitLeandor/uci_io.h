@@ -1,5 +1,5 @@
 #pragma once
-#define NOMINMAX
+#define NOMINMAX 1
 #include <winsock.h>
 #ifdef WIN64
 #include <windows.h>

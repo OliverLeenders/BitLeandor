@@ -15,12 +15,13 @@ public:
 	bitboard();
 
 	uint64_t bbs[6][2] = { {0, 0}, {0, 0}, {0, 0} , {0, 0} , {0, 0}, {0, 0} };
-	int types[64] = { EMPTY };
-	int pieces[64] = { EMPTY_PIECE };
+	uint8_t types[64] = { EMPTY };
+	uint8_t pieces[64] = { EMPTY_PIECE };
 
 	// occupancy bitboards
-	uint64_t occupancy[3] = { 0 };
-	uint64_t zobrist_key = 0;
+	uint64_t occupancy[3] = { 0ULL };
+	uint64_t zobrist_key = 0ULL;
+	uint64_t pawn_hash_key = 0ULL;
 	bool side_to_move = 0;
 	void pos_from_fen(std::string fen);
 	int char_to_rank(char c);
@@ -29,7 +30,7 @@ public:
 	
 	template<bool side_to_move>
 	bool pawns_before_back_rank() {
-		uint64_t rank = (side_to_move) ? bitboard_util::second_rank : bitboard_util::seventh_rank;
+		uint64_t rank = (side_to_move) ? second_rank : seventh_rank;
 		uint64_t promotion_candidates = bbs[PAWN][side_to_move] & rank;
 		return promotion_candidates != 0ULL;
 	}
@@ -44,7 +45,7 @@ public:
 		b_kingside = 4,
 		b_queenside = 8
 	};
-	int ep_target_square = -1;
+	int8_t ep_target_square = -1;
 
 	bool is_sane();
 
@@ -59,8 +60,7 @@ public:
 		uint8_t piece = (side_to_move) ? type + BLACK_PAWN : type;
 		uint8_t captured_type = m->get_captured_type();
 		uint8_t captured_piece = (side_to_move) ? captured_type : captured_type + BLACK_PAWN;
-		uint64_t origin_mask = 1ULL << origin;
-	
+		
 		// if the move was not generated we need to check
 		// the availability of a piece which is able to move 
 		// to that square (and more) stil incomplete -- does
@@ -117,7 +117,7 @@ public:
 				if ((attacks::squares_between[origin][target] & occupancy[2]) != 0ULL) {
 					/*std::cout << std::endl;
 					print_board();
-					bitboard_util::print_bitboard(attacks::squares_between[origin][target]);
+					print_bitboard(attacks::squares_between[origin][target]);
 					std::cout << "Move: " << bit_move::to_string(*m) << std::endl;
 					*/
 					return false;

@@ -1,4 +1,4 @@
-#pragma 
+#pragma once
 #include <chrono>
 #include <io.h>
 
@@ -14,7 +14,6 @@
 class search
 {
 public:
-	static const int MATE = 100000;
 	static const int MAX_PV_SIZE = 256;
 	static const int CAPTURE_SCORE = 100000;
 	static const int KILLER_1_SCORE = 10000;
@@ -24,7 +23,7 @@ public:
 	static void init_lmr();
 
 	static int DEPTH;
-	static std::chrono::time_point<std::chrono::steady_clock> ENDTIME;
+	static std::chrono::time_point<std::chrono::system_clock> ENDTIME;
 	static movelist moves[256];
 	static scorelist scores[256];
 	static int history[2][64][64];

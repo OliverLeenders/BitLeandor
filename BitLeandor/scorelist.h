@@ -7,4 +7,5 @@ public:
 	int size = 0;
 	~scorelist();
 };
+ 
 

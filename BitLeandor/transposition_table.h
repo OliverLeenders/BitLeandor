@@ -15,7 +15,7 @@ public:
 	static uint64_t castling_keys[4];
 	static uint64_t en_passant_keys[8];
 	static uint64_t side_key;
-	void set(uint64_t key, int depth, int eval, int flag, bit_move move);
+	void set(uint64_t key, int depth, int ply, int eval, int flag, bit_move move);
 	int probe(uint64_t key, int depth, int ply, int alpha, int beta, bit_move* m);
 	int probe_qsearch(uint64_t key, int ply, int alpha, int beta, bit_move* m);
 	~transposition_table();

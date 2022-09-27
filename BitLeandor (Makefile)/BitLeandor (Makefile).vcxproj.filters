@@ -1,0 +1,129 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Quelldateien">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Headerdateien">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Ressourcendateien">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Headerdateien\Headerdateien">
+      <UniqueIdentifier>{e5f26568-6189-4eed-a75f-26096e57ca2b}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\BitLeandor\attacks.h">
+      <Filter>Headerdateien\Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\BitLeandor\bitboard.h">
+      <Filter>Headerdateien\Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\BitLeandor\bitboard_util.h">
+      <Filter>Headerdateien\Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\BitLeandor\bit_move.h">
+      <Filter>Headerdateien\Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\BitLeandor\board_state.h">
+      <Filter>Headerdateien\Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\BitLeandor\constants.h">
+      <Filter>Headerdateien\Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\BitLeandor\evaluator.h">
+      <Filter>Headerdateien\Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\BitLeandor\uci_io.h">
+      <Filter>Headerdateien\Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\BitLeandor\movelist.h">
+      <Filter>Headerdateien\Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\BitLeandor\magics.h">
+      <Filter>Headerdateien\Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\BitLeandor\movegen.h">
+      <Filter>Headerdateien\Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\BitLeandor\perft.h">
+      <Filter>Headerdateien\Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\BitLeandor\scorelist.h">
+      <Filter>Headerdateien\Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\BitLeandor\search.h">
+      <Filter>Headerdateien\Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\BitLeandor\transposition_table.h">
+      <Filter>Headerdateien\Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\BitLeandor\tt_entry.h">
+      <Filter>Headerdateien\Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\BitLeandor\utility.h">
+      <Filter>Headerdateien\Headerdateien</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\BitLeandor\attacks.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\BitLeandor\bit_move.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\BitLeandor\bitboard.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\BitLeandor\bitboard_util.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\BitLeandor\board_state.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\BitLeandor\evaluator.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\BitLeandor\magics.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\BitLeandor\main.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\BitLeandor\movegen.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\BitLeandor\movelist.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\BitLeandor\perft.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\BitLeandor\scorelist.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\BitLeandor\search.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\BitLeandor\transposition_table.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\BitLeandor\tt_entry.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\BitLeandor\uci_io.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\BitLeandor\utility.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="makefile">
+      <Filter>Ressourcendateien</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
