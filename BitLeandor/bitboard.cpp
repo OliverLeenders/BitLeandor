@@ -162,12 +162,14 @@ void bitboard::pos_from_fen(std::string fen) {
 					this->types[board_index] = KING;
 					this->pieces[board_index] = WHITE_KING;
 					this->zobrist_key ^= transposition_table::piece_keys[WHITE_KING][board_index];
+					this->pawn_hash_key ^= transposition_table::piece_keys[WHITE_KING][board_index];
 					break;
 				case 'k':
 					this->bbs[KING][1] |= set_bit(board_index);
 					this->types[board_index] = KING;
 					this->pieces[board_index] = BLACK_KING;
 					this->zobrist_key ^= transposition_table::piece_keys[BLACK_KING][board_index];
+					this->pawn_hash_key ^= transposition_table::piece_keys[BLACK_KING][board_index];
 					break;
 				default:
 					std::cout << "An error occured while reading the fen -- illegal position string. char at fault: '" << c << "'." << std::endl;
@@ -276,6 +278,11 @@ void bitboard::update_zobrist_key(bit_move* m)
 
 	if (type == PAWN) {
 		this->pawn_hash_key ^= transposition_table::piece_keys[piece][origin];
+		this->pawn_hash_key ^= transposition_table::piece_keys[piece][target];	
+	}
+	if (type == KING) {
+		this->pawn_hash_key ^= transposition_table::piece_keys[piece][origin];
+		this->pawn_hash_key ^= transposition_table::piece_keys[piece][target];
 	}
 	
 	if (flags < bit_move::knight_promotion) {

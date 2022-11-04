@@ -42,13 +42,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>Intel C++ Compiler 2022</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>Intel(R) oneAPI DPC++ Compiler 2022</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
     <ProfileGuidedOptimization>PGOInstrument</ProfileGuidedOptimization>
@@ -157,6 +157,8 @@
     <ClInclude Include="board_state.h" />
     <ClInclude Include="constants.h" />
     <ClInclude Include="evaluator.h" />
+    <ClInclude Include="pawn_transposition_table.h" />
+    <ClInclude Include="pawn_tt_entry.h" />
     <ClInclude Include="uci_io.h" />
     <ClInclude Include="movelist.h" />
     <ClInclude Include="magics.h" />
@@ -178,6 +180,8 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="movegen.cpp" />
     <ClCompile Include="movelist.cpp" />
+    <ClCompile Include="pawn_transposition_table.cpp" />
+    <ClCompile Include="pawn_tt_entry.cpp" />
     <ClCompile Include="perft.cpp" />
     <ClCompile Include="scorelist.cpp" />
     <ClCompile Include="search.cpp" />

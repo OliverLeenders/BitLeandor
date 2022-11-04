@@ -2,12 +2,14 @@
 
 #include "bitboard.h"
 #include "transposition_table.h"
+#include "pawn_tt_entry.h"
+#include "pawn_transposition_table.h"
 
 class evaluator
 {
 public:
 	static int eval(bitboard* b);
-	static int eval_pawn_structure(bitboard* b);
+	static int eval_pawn_structure(bitboard* b, uint8_t phase);
 	static void init_tables();
 	
 	enum {
@@ -39,10 +41,15 @@ public:
 	const static int queen_pst_eg[64];
 	const static int king_pst_mg[64];
 	const static int king_pst_eg[64];
+	const static int passed_pawn_bonus_pst_mg[64];
+	const static int passed_pawn_bonus_pst_eg[64];
+	
+	static int pp_bonus[2][2][64]; // [color][phase][square]
+	const static int double_pawn_penalty[2][2][8]; // [color][phase][file]
 
 	// master PST
 	static int piece_square_tables[2][12][64];
 	
 	// pawn structure transposition table
-	static transposition_table pawn_tt;
+	static pawn_transposition_table pawn_tt;
 };

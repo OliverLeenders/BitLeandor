@@ -66,6 +66,12 @@
     <ClInclude Include="uci_io.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="pawn_transposition_table.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="pawn_tt_entry.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="attacks.cpp">
@@ -114,6 +120,12 @@
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="uci_io.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="pawn_transposition_table.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="pawn_tt_entry.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
   </ItemGroup>

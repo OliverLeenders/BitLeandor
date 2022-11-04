@@ -33,6 +33,7 @@ int main() {
 	// std::string pos = "4k1n1/8/8/8/8/3r4/4P3/4K1N1 w - - 0 1";
 	//std::string pos = "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8";
 	b.pos_from_fen(pos);
+
 	uci_console();
 
 	return 0;

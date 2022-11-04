@@ -4,15 +4,22 @@
 #include <intrin.h>
 #include "constants.h"
 
-inline uint64_t set_bit(int bit) {
+[[nodiscard]] inline uint64_t set_bit(int bit) {
 	return 1ULL << bit;
 }
 
 
-inline bool is_bit_set(uint64_t bitboard, int bit) {
+[[nodiscard]] inline bool is_bit_set(uint64_t bitboard, int bit) {
 	return bitboard & set_bit(bit);
 }
-/* void print_bitboard(uint64_t bitboard) {
+
+[[nodiscard]] inline uint64_t reset_lsb(uint64_t bb) {
+	return bb & bb - 1;
+}
+
+
+
+inline void print_bitboard(uint64_t bitboard) {
 	for (int i = 0; i < 8; i++) {
 		for (int j = 0; j < 8; j++) {
 			int bit = (7 - i) * 8 + j;
@@ -29,7 +36,7 @@ inline bool is_bit_set(uint64_t bitboard, int bit) {
 	std::cout << bitboard << std::endl;
 	return;
 }
-*/
+
 
 
 // not A file constant
@@ -81,3 +88,6 @@ const uint64_t b_kingside_castling_mask = 6917529027641081856ULL;
 	return (uint8_t)index;
 }
 
+[[nodiscard]] inline uint8_t PopCount64(uint64_t bb) {
+	return __popcnt64(bb);
+}

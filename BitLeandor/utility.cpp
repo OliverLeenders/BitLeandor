@@ -171,7 +171,7 @@ bool utility::random_bool() {
 */
 void utility::split_string(std::vector<std::string>* v, std::string s) {
 	std::string tmp = "";
-	for (int i = 0; i < s.length(); i++) {
+	for (size_t i = 0; i < s.length(); i++) {
 		if (s[i] != ' ') {
 			tmp.push_back(s[i]);
 		}

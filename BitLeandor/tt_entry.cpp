@@ -10,6 +10,7 @@ tt_entry::tt_entry(uint64_t key, int set_score, int set_depth, int set_type, bit
 	this->depth = set_depth;
 	this->type = set_type;
 	this->hash_move = set_move;
+	this->key = key;
 }
 
 tt_entry::~tt_entry()

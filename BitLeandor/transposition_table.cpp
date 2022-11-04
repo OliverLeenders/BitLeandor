@@ -78,11 +78,11 @@ int transposition_table::probe(uint64_t key, int depth, int ply, int alpha, int 
 
 int transposition_table::probe_qsearch(uint64_t key, int ply, int alpha, int beta, bit_move* m)
 {
-	tt_entry* entry = &this->table[key % this->size];
-	if (entry->key == key) {
-		m->move = entry->hash_move.move;
-		if (entry->type == tt_entry::EXACT) {
-			int score = entry->score;
+	tt_entry entry = this->table[key % this->size];
+	if (entry.key == key) {
+		m->move = entry.hash_move.move;
+		if (entry.type == tt_entry::EXACT) {
+			int score = entry.score;
 			if (std::abs(score) >= MATE - 256) {
 				return score - utility::sgn(score) * ply;
 			}
@@ -90,10 +90,10 @@ int transposition_table::probe_qsearch(uint64_t key, int ply, int alpha, int bet
 				return score;
 			}
 		}
-		if (entry->type == tt_entry::UPPER_BOUND && entry->score <= alpha) {
+		if (entry.type == tt_entry::UPPER_BOUND && entry.score <= alpha) {
 			return alpha;
 		}
-		if (entry->type == tt_entry::LOWER_BOUND && entry->score >= beta) {
+		if (entry.type == tt_entry::LOWER_BOUND && entry.score >= beta) {
 			return beta;
 		}
 		//std::cout << "Hash move: " << bit_move::to_string(pos_hash_entry->hash_move) << std::endl;
