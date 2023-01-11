@@ -65,6 +65,9 @@ uint64_t perft::run_perft_console(bitboard* b, int depth)
 				std::cout << curr_nodes << std::endl;
 				b->unmake_move();
 			}
+			else {
+				std::cout << "[" << bit_move::to_string(m) << "] (" << (int)m.get_flags() << "): ";
+			}
 		}
 		std::cout << "Total nodes: " << nodes << std::endl;
 

@@ -24,8 +24,10 @@ public:
 	uint64_t pawn_hash_key = 0ULL;
 	bool side_to_move = 0;
 	void pos_from_fen(std::string fen);
+	std::string pos_to_fen();
 	int char_to_rank(char c);
 	int char_to_file(char c);
+	int piece_to_char(uint8_t piece);
 	bool is_square_attacked(int square, bool side_to_move);
 	
 	template<bool side_to_move>

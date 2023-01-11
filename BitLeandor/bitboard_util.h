@@ -76,6 +76,9 @@ const uint64_t w_kingside_castling_mask = 96ULL;
 const uint64_t b_queenside_castling_mask = 1008806316530991104ULL;
 const uint64_t b_kingside_castling_mask = 6917529027641081856ULL;
 
+/**
+Getting the index of the least significant set bit
+*/
 [[nodiscard]] inline uint8_t BitScanForward64(uint64_t bb) {
 	unsigned long index;
 	_BitScanForward64(&index, bb);

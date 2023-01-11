@@ -1,5 +1,7 @@
 #include "search.h"
 
+// defining static variables
+
 bit_move search::PV[MAX_PV_SIZE][MAX_PV_SIZE] = {};
 bit_move search::killers[2][MAX_PV_SIZE] = {};
 int search::history[2][64][64] = {{{0}}};
@@ -41,7 +43,15 @@ int search::quiescence(bitboard *b, int alpha, int beta, int ply)
 	_BitScanForward64(&king_pos, b->bbs[KING][b->side_to_move]);
 	bool is_check = b->is_square_attacked(king_pos, !b->side_to_move);
 
-	int stand_pat = (is_check) ? -MATE + ply : evaluator::eval(b);
+	int stand_pat;
+	
+	if (is_check) {
+		stand_pat = -MATE + ply;
+	}
+	else {
+		stand_pat = evaluator::eval(b);
+	}
+	
 	if (stand_pat >= beta)
 	{
 		return beta;
@@ -226,11 +236,13 @@ int search::alpha_beta(bitboard *b, int depth, int alpha, int beta, int ply)
 	//															//
 	//**********************************************************//
 
-	if (depth <= 3 && static_eval + 250 * depth < beta) {
-		int score = quiescence(b, alpha, beta, ply);
-		if (score < beta)
-			return score;
-	}
+	/*if (!pv && !is_check) {
+		if (depth <= 3 && static_eval + 250 * depth < beta) {
+			int score = quiescence(b, alpha, beta, ply);
+			if (score < beta)
+				return score;
+		}
+	}*/
 
 
 	bool post_null_move = b->game_history.size() > 0 && b->game_history.back().last_move.move == 0;
@@ -486,8 +498,8 @@ int search::search_iterative_deepening(bitboard *b, int depth)
 		else
 		{
 			// set aspiration window
-			int prev_alpha = prev_score - 32;
-			int prev_beta = prev_score + 32;
+			int prev_alpha = prev_score - 16;
+			int prev_beta = prev_score + 16;
 
 			// search with aspiration window
 			score = alpha_beta(b, i, prev_alpha, prev_beta, 0);
@@ -505,9 +517,9 @@ int search::search_iterative_deepening(bitboard *b, int depth)
 					}
 				}
 				// if the score is too low, decrease alpha
-				prev_alpha = (score <= prev_alpha) ? -prev_alpha - (16 << num_fails) : prev_alpha;
+				prev_alpha = (score <= prev_alpha) ? prev_alpha - (16 << num_fails) : prev_alpha;
 				// if the score is too high, increase beta
-				prev_beta = (score >= prev_beta) ? -prev_beta + (16 << num_fails) : prev_beta;
+				prev_beta = (score >= prev_beta) ? prev_beta + (16 << num_fails) : prev_beta;
 				// research
 				score = alpha_beta(b, i, prev_alpha, prev_beta, 0);
 				num_fails++;
@@ -569,7 +581,7 @@ int search::search_iterative_deepening(bitboard *b, int depth)
 			int duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - STARTTIME).count();
 			// compute nps
 			int nps = (duration_ms > 0) ? (int)((double)NODES_SEARCHED / ((double)duration_ms / 1000.0)) : 0;
-			std::cout << "nps " << nps << std::endl;
+			std::cout << "nps " << nps << " num_fails " << num_fails << std::endl;
 
 			for (int x = 0; x < MAX_PV_SIZE; x++)
 			{

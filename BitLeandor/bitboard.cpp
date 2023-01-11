@@ -237,11 +237,112 @@ void bitboard::pos_from_fen(std::string fen) {
 	return;
 }
 
+std::string bitboard::pos_to_fen()
+{
+	std::string fen = "";
+	// iterating over the ranks from top to bottom (8th to first)
+	for (int rank = 7; rank >= 0; rank--) {
+		// iterating over the squares in the rank...
+		int gap = 0;
+		for (int square = 0; square < 8; square++) {
+			uint8_t piece = pieces[8 * rank + square];
+			if (piece != EMPTY_PIECE) {
+				if (gap > 0) {
+					fen += std::to_string(gap);
+				}
+				fen += piece_to_char(piece);
+				gap = 0;
+			}
+			else {
+				gap++;
+			}
+		}
+		if (gap > 0) {
+			fen += std::to_string(gap);
+		}
+		// print slashes between the ranks
+		// don't print the last slash
+		if (rank > 0) {
+			fen += "/";
+		}
+	}
+	fen += " ";
+	fen += side_to_move ? "b" : "w";
+	fen += " ";
+
+	if (castling_rights & w_kingside) {
+		fen += "K";
+	}
+	if (castling_rights & w_queenside) {
+		fen += "Q";
+	}
+	if (castling_rights & b_kingside) {
+		fen += "k";
+	}
+	if (castling_rights & b_queenside) {
+		fen += "q";
+	}
+	if (castling_rights = 0) {
+		fen += "-";
+	}
+
+	fen += " ";
+
+	// ep target
+	if (ep_target_square != -1) {
+		fen.append(bit_move::squares_to_string[ep_target_square]);
+	}
+	else {
+		fen += "-";
+	}
+
+	fen += " ";
+	fen += std::to_string(fifty_move_rule_counter);
+	fen += " ";
+	fen += std::to_string(full_move_clock);
+
+	return fen;
+}
+
 int bitboard::char_to_rank(char c) {
 	return c - '0' - 1;
 }
 int bitboard::char_to_file(char c) {
 	return c - 'a';
+}
+
+int bitboard::piece_to_char(uint8_t piece)
+{
+	switch (piece)
+	{
+	case EMPTY_PIECE: 
+		return ' ';
+	case WHITE_KING: 
+		return 'K';
+	case BLACK_KING:
+		return 'k';
+	case WHITE_PAWN:
+		return 'P';
+	case BLACK_PAWN:
+		return 'p';
+	case WHITE_KNIGHT:
+		return 'N';
+	case BLACK_KNIGHT:
+		return 'n';
+	case WHITE_BISHOP:
+		return 'B';
+	case BLACK_BISHOP:
+		return 'b';
+	case WHITE_ROOK:
+		return 'R';
+	case BLACK_ROOK:
+		return 'r';
+	case WHITE_QUEEN:
+		return 'Q';
+	case BLACK_QUEEN:
+		return 'q';
+	}
+	return '?';
 }
 
 void bitboard::make_null_move() {
@@ -255,7 +356,7 @@ void bitboard::make_null_move() {
 		this->zobrist_key ^= transposition_table::en_passant_keys[this->ep_target_square % 8];
 	}
 	this->ep_target_square = -1;
-	
+
 }
 
 void bitboard::unmake_null_move() {
@@ -278,13 +379,13 @@ void bitboard::update_zobrist_key(bit_move* m)
 
 	if (type == PAWN) {
 		this->pawn_hash_key ^= transposition_table::piece_keys[piece][origin];
-		this->pawn_hash_key ^= transposition_table::piece_keys[piece][target];	
+		this->pawn_hash_key ^= transposition_table::piece_keys[piece][target];
 	}
 	if (type == KING) {
 		this->pawn_hash_key ^= transposition_table::piece_keys[piece][origin];
 		this->pawn_hash_key ^= transposition_table::piece_keys[piece][target];
 	}
-	
+
 	if (flags < bit_move::knight_promotion) {
 		this->zobrist_key ^= transposition_table::piece_keys[piece][origin];
 	}
@@ -450,8 +551,9 @@ void bitboard::print_board()
 		std::cout << bit_move::to_string(s.last_move) << " ";
 	}
 	std::cout << std::endl;
-	std::cout << "ep-target-square: " << ep_target_square << std::endl;
+	std::cout << "FEN: " << pos_to_fen() << std::endl;
 	std::cout << "Hash: " << zobrist_key << std::endl;
+	std::cout << std::endl;
 }
 
 
@@ -627,7 +729,7 @@ void bitboard::unmake_move()
 	this->fifty_move_rule_counter = prev_board_state.fifty_move_counter;
 	this->ep_target_square = prev_board_state.en_passant_target_square;
 	this->zobrist_key = prev_board_state.z_hash;
-	
+
 	bit_move prev_move = prev_board_state.last_move;
 	uint8_t origin = prev_move.get_origin();
 	uint8_t target = prev_move.get_target();
