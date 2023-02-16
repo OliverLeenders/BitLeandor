@@ -14,7 +14,7 @@ const uint8_t evaluator::game_phase_values[6] = {
 // total : 16 + 16 + 24 + 20 = 76
 
 const uint8_t evaluator::mobility_divisors[6] = {
-	1,
+	1, 
 	1,
 	// bishop
 	2,

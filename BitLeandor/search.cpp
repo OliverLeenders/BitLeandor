@@ -4,7 +4,7 @@
 
 bit_move search::PV[MAX_PV_SIZE][MAX_PV_SIZE] = {};
 bit_move search::killers[2][MAX_PV_SIZE] = {};
-int search::history[2][64][64] = {{{0}}};
+int search::history[2][64][64] = { {{0}} };
 int search::DEPTH = 0;
 std::chrono::time_point<std::chrono::steady_clock> search::ENDTIME = {};
 std::chrono::time_point<std::chrono::steady_clock> search::STARTTIME = {};
@@ -23,11 +23,11 @@ const int search::mvv_lva[6][6] = {
 	{103, 203, 303, 403, 503, 603},
 	{102, 202, 302, 402, 502, 602},
 	{101, 201, 301, 401, 501, 601},
-	{100, 200, 300, 400, 500, 600}};
+	{100, 200, 300, 400, 500, 600} };
 
-int search::lmr[MAX_PV_SIZE][MAX_PV_SIZE] = {{0}};
+int search::lmr[MAX_PV_SIZE][MAX_PV_SIZE] = { {0} };
 
-int search::quiescence(bitboard *b, int alpha, int beta, int ply)
+int search::quiescence(bitboard* b, int alpha, int beta, int ply)
 {
 	NODES_SEARCHED++;
 	QNODES_SEARCHED++;
@@ -41,17 +41,18 @@ int search::quiescence(bitboard *b, int alpha, int beta, int ply)
 
 	unsigned long king_pos;
 	_BitScanForward64(&king_pos, b->bbs[KING][b->side_to_move]);
+	
 	bool is_check = b->is_square_attacked(king_pos, !b->side_to_move);
 
 	int stand_pat;
-	
+
 	if (is_check) {
 		stand_pat = -MATE + ply;
 	}
 	else {
 		stand_pat = evaluator::eval(b);
 	}
-	
+
 	if (stand_pat >= beta)
 	{
 		return beta;
@@ -147,7 +148,7 @@ void search::init_lmr()
 	}
 }
 
-int search::alpha_beta(bitboard *b, int depth, int alpha, int beta, int ply)
+int search::alpha_beta(bitboard* b, int depth, int alpha, int beta, int ply)
 {
 	if (stop_now)
 	{
@@ -466,13 +467,14 @@ generate:
 	return best_score;
 }
 
-int search::search_iterative_deepening(bitboard *b, int depth)
+int search::search_iterative_deepening(bitboard* b, int depth, bool quiet)
 {
 	stop_now = false;
 	int prev_score = 0;
 	bit_move best_move = bit_move();
 	int i;
 	int score = 0;
+	int TOTAL_NODES = 0;
 	//**********************************************************//
 	// 															//
 	// iterate from depth 1 to n								//
@@ -533,56 +535,58 @@ int search::search_iterative_deepening(bitboard *b, int depth)
 		if (stop_now)
 		{
 			// if we stopped the search, abort, since incomplete search is invalid
-			std::cout << "info nodes " << NODES_SEARCHED << std::endl;
+			if (!quiet)
+				std::cout << "info nodes " << NODES_SEARCHED << std::endl;
 			break;
 		}
 		else
 		{
 			// if we didn't stop the search, print the info
-			std::cout << "info depth " << i << " seldepth " << i << " multipv 1";
+			if (!quiet) {
+				std::cout << "info depth " << i << " seldepth " << i << " multipv 1";
 
-			if (std::abs(score) < MATE - MAX_PV_SIZE - 1 && !stop_now)
-			{
-				std::cout << " score cp " << ((stop_now) ? prev_score : score) << " ";
-			}
-			else
-			{
-				std::cout << " score mate " << utility::sgn(score) * (MATE - std::abs(score) + 1) / 2 << " ";
-			}
-
-			best_move = PV[0][0];
-			std::cout << "pv ";
-			int j;
-			int dist_to_mate = std::abs(MATE - score);
-			bool root_side = b->side_to_move;
-			for (j = 0; j < std::min(i, dist_to_mate); j++)
-			{
-				bit_move m = PV[0][j];
-				if (m.move == 0)
+				if (std::abs(score) < MATE - MAX_PV_SIZE - 1 && !stop_now)
 				{
-					break;
+					std::cout << " score cp " << ((stop_now) ? prev_score : score) << " ";
 				}
-				if (!b->is_legal<false>(&m) && j < i - 1)
+				else
 				{
-					break;
+					std::cout << " score mate " << utility::sgn(score) * (MATE - std::abs(score) + 1) / 2 << " ";
 				}
 
-				tt.set(b->zobrist_key, i - j, j, (b->side_to_move == root_side) ? score : -score, tt_entry::EXACT, m);
-				b->make_move(&m);
-				std::cout << bit_move::to_string(search::PV[0][j]) << " ";
+				best_move = PV[0][0];
+				std::cout << "pv ";
+				int j;
+				int dist_to_mate = std::abs(MATE - score);
+				bool root_side = b->side_to_move;
+				for (j = 0; j < std::min(i, dist_to_mate); j++)
+				{
+					bit_move m = PV[0][j];
+					if (m.move == 0)
+					{
+						break;
+					}
+					if (!b->is_legal<false>(&m) && j < i - 1)
+					{
+						break;
+					}
+
+					tt.set(b->zobrist_key, i - j, j, (b->side_to_move == root_side) ? score : -score, tt_entry::EXACT, m);
+					b->make_move(&m);
+					std::cout << bit_move::to_string(search::PV[0][j]) << " ";
+				}
+				for (; j > 0; j--)
+				{
+					b->unmake_move();
+				}
+
+				std::cout << "nodes " << NODES_SEARCHED << " qnodes " << QNODES_SEARCHED << " ";
+
+				int duration_ms = (int)std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - STARTTIME).count();
+				// compute nps
+				int nps = (duration_ms > 0) ? (int)((double)NODES_SEARCHED / ((double)duration_ms / 1000.0)) : 0;
+				std::cout << "nps " << nps << " num_fails " << num_fails << std::endl;
 			}
-			for (; j > 0; j--)
-			{
-				b->unmake_move();
-			}
-
-			std::cout << "nodes " << NODES_SEARCHED << " qnodes " << QNODES_SEARCHED << " ";
-
-			int duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - STARTTIME).count();
-			// compute nps
-			int nps = (duration_ms > 0) ? (int)((double)NODES_SEARCHED / ((double)duration_ms / 1000.0)) : 0;
-			std::cout << "nps " << nps << " num_fails " << num_fails << std::endl;
-
 			for (int x = 0; x < MAX_PV_SIZE; x++)
 			{
 				for (int y = 0; y < MAX_PV_SIZE; y++)
@@ -590,13 +594,16 @@ int search::search_iterative_deepening(bitboard *b, int depth)
 					PV[x][y].move = 0;
 				}
 			}
+
+			TOTAL_NODES += NODES_SEARCHED;
 		}
 	}
-	std::cout << "bestmove " << bit_move::to_string(best_move) << std::endl;
-	return prev_score;
+	if (!quiet)
+		std::cout << "bestmove " << bit_move::to_string(best_move) << std::endl;
+	return TOTAL_NODES;
 }
 
-void search::update_PV(bit_move *m, int ply)
+void search::update_PV(bit_move* m, int ply)
 {
 	PV[ply][0] = *m;
 	for (int i = 0; i < MAX_PV_SIZE - 1; i++)
@@ -605,7 +612,7 @@ void search::update_PV(bit_move *m, int ply)
 	}
 }
 
-void search::score_moves(movelist *m_l, scorelist *s_l, bool side_to_move)
+void search::score_moves(movelist* m_l, scorelist* s_l, bool side_to_move)
 {
 	s_l->size = m_l->size;
 	for (int i = 0; i < m_l->size; i++)
@@ -629,7 +636,7 @@ void search::score_moves(movelist *m_l, scorelist *s_l, bool side_to_move)
 /// <param name="m_l">Movelist</param>
 /// <param name="s_l">Scorelist</param>
 /// <param name="index">Index pointing to next element after sorted area</param>
-void search::fetch_next_move(movelist *m_l, scorelist *s_l, int index)
+void search::fetch_next_move(movelist* m_l, scorelist* s_l, int index)
 {
 	// defining temp variables to store the move and score
 	int max_score = s_l->scores[index];
@@ -665,7 +672,7 @@ void search::communicate()
 		std::getline(std::cin, line);
 		if (line != "")
 		{
-			std::vector<std::string> *split = new std::vector<std::string>;
+			std::vector<std::string>* split = new std::vector<std::string>;
 			utility::split_string(split, line);
 			if (split->at(0) == "stop")
 			{

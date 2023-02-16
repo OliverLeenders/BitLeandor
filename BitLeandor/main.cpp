@@ -7,8 +7,10 @@
 #include "perft.h"
 #include "search.h"
 #include "transposition_table.h"
+#include <fstream>
 
 void uci_console();
+void bench();
 void parse_and_make_move(std::vector<std::string>* split, int i);
 bitboard b = bitboard();
 
@@ -67,7 +69,7 @@ void uci_console() {
 					if (split->size() >= 3) {
 						if (split->at(2) == "moves") {
 							for (size_t i = 3; i < split->size(); i++) {
-								parse_and_make_move(split, i);
+								parse_and_make_move(split, (int)i);
 							}
 						}
 
@@ -75,17 +77,16 @@ void uci_console() {
 				}
 				else if (split->at(1) == "fen") {
 					std::string fen = "";
-					for (int i = 2; i < 8; i++) {
+					for (int i = 2; i < 6; i++) {
 						fen += split->at(i) + " ";
 					}
 					b.pos_from_fen(fen);
 					if (split->size() >= 9) {
 						if (split->at(8) == "moves") {
 							for (size_t i = 9; i < split->size(); i++) {
-								parse_and_make_move(split, i);
+								parse_and_make_move(split, (int)i);
 							}
 						}
-
 					}
 				}
 				else if (split->at(1) == "kiwipete") {
@@ -93,7 +94,7 @@ void uci_console() {
 					if (split->size() >= 3) {
 						if (split->at(2) == "moves") {
 							for (size_t i = 3; i < split->size(); i++) {
-								parse_and_make_move(split, i);
+								parse_and_make_move(split, (int)i);
 							}
 						}
 
@@ -101,16 +102,20 @@ void uci_console() {
 				}
 			}
 
+			else if (split->at(0) == "bench") {
+				bench();
+			}
+
 			else if (split->at(0) == "go") {
 				if (split->size() >= 3) {
 					if (split->at(1) == "depth") {
 						int depth = std::stoi(split->at(2));
-						search::search_iterative_deepening(&b, depth);
+						search::search_iterative_deepening(&b, depth, false);
 					}
 					if (split->at(1) == "movetime") {
 						int time = std::stoi(split->at(2));
 						search::ENDTIME = std::chrono::high_resolution_clock().now() + std::chrono::milliseconds(time);
-						search::search_iterative_deepening(&b, 256);
+						search::search_iterative_deepening(&b, 256, false);
 						search::ENDTIME = {};
 					}
 					if (split->size() >= 9 && split->at(1) == "wtime" && split->at(3) == "btime" && split->at(5) == "winc" && split->at(7) == "binc") {
@@ -126,7 +131,7 @@ void uci_console() {
 							time = std::min(w_time, (w_time + 25 * w_inc) / 25);
 						}
 						search::ENDTIME = std::chrono::high_resolution_clock().now() + std::chrono::milliseconds(time);
-						search::search_iterative_deepening(&b, 256);
+						search::search_iterative_deepening(&b, 256, false);
 						search::ENDTIME = {};
 					}
 					else if (split->at(1) == "perft") {
@@ -135,11 +140,19 @@ void uci_console() {
 					}
 				}
 				else if (split->size() == 2 && split->at(1) == "infinite") {
-					search::search_iterative_deepening(&b, 256);
+					search::search_iterative_deepening(&b, 256, false);
 				}
 			}
 			else if (split->at(0) == "d") {
 				b.print_board();
+			}
+			else if (split->at(0) == "unmake") {
+				if (bit_move::to_string(b.game_history.back().last_move) == "a1a1") {
+					b.unmake_null_move();
+				}
+				else {
+					b.unmake_move();
+				}
 			}
 			else if (split->at(0) == "quit") {
 				break;
@@ -152,8 +165,46 @@ void uci_console() {
 	}
 }
 
+void bench()
+{
+	// read fens_1000.txt
+	// split by lines
+	// go depth 7-10 or so for each line
+	// sum up total number of nodes
+	// also benchmark whole thing
+	std::string* lines = new std::string[1000];
+	std::string line;
+	std::ifstream file("fens_1000.txt");
+	std::cout << "Reading file \"fens_100.txt\" ... ";
+	int i = 0;
+	while (std::getline(file, line) && i < 1000) {
+		lines[i] = line;
+		i++;
+	}
+	std::cout << "DONE." << std::endl << "Searching each FEN position with depth = 7 ... " << std::endl;
+	int nodes = 0;
+	for (i = 0; i < 1000; i++) {
+		if (i % 50 == 0) {
+			std::cout << ".";
+		}
+		b.pos_from_fen(lines[i]);
+		nodes += search::search_iterative_deepening(&b, 7, true);
+	}
+	std::cout << std::endl;
+	std::cout << "DONE" << std::endl;
+
+	std::cout << "Total nodes searched: " << nodes << std::endl;
+
+	delete[] lines;
+
+}
+
 void parse_and_make_move(std::vector<std::string>* split, int i)
 {
+	if (split->at(i) == "a1a1") {
+		b.make_null_move();
+		return;
+	}
 	uint8_t origin = (std::stoi(split->at(i).substr(1, 2)) - 1) * 8 + (split->at(i).at(0) - 'a');
 	uint8_t target = (std::stoi(split->at(i).substr(3, 4)) - 1) * 8 + (split->at(i).at(2) - 'a');
 
@@ -163,7 +214,7 @@ void parse_and_make_move(std::vector<std::string>* split, int i)
 	bool is_castle_queenside = b.types[origin] == KING && target == origin - 2;
 	bool is_double_pawn_push = b.types[origin] == PAWN && (target == origin + 16 || target == origin - 16);
 	uint8_t promotion_type = 0;
-	bool is_ep = target == b.ep_target_square && b.types[origin] == PAWN;
+	bool is_ep = (1ULL << target) == b.ep_target_square && b.types[origin] == PAWN;
 	uint8_t captured_type = b.types[target];
 
 	if (is_promotion) {

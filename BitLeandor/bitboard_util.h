@@ -92,5 +92,5 @@ Getting the index of the least significant set bit
 }
 
 [[nodiscard]] inline uint8_t PopCount64(uint64_t bb) {
-	return __popcnt64(bb);
+	return (uint8_t)__popcnt64(bb);
 }

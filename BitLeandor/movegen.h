@@ -105,9 +105,9 @@ public:
 			origin = BitScanForward64(pawns);
 			pawn_attacks = attacks::pawn_attacks[side_to_move][origin] & (b->occupancy[!side_to_move]);
 			// if previous move was a double pawn push ...
-			if (b->ep_target_square != -1) {
+			if (b->ep_target_square != 0ULL) {
 				// if current pawn can capture en passant -> add target square to attacks
-				pawn_attacks |= attacks::pawn_attacks[side_to_move][origin] & (1ULL << b->ep_target_square);
+				pawn_attacks |= attacks::pawn_attacks[side_to_move][origin] & b->ep_target_square;
 			}
 			// as long as there are possible captures (or promotion captures) ...
 			while (pawn_attacks != 0ULL) {
@@ -116,7 +116,7 @@ public:
 				// retrieve type of captured piece
 				capture_type = b->piece_type_from_index(target);
 				// the target is the en passant target square => the current capture is an en passant capture
-				if (target == b->ep_target_square) {
+				if ((1ULL << target) == b->ep_target_square) {
 					// add the move to the movelist
 					l->moves[l->size] = bit_move((uint8_t)origin, (uint8_t)target, bit_move::ep_capture, PAWN, PAWN);
 					// increment movelist size counter
@@ -208,9 +208,9 @@ public:
 				capture_type = b->piece_type_from_index(target);
 				l->moves[l->size] = bit_move((uint8_t)origin, (uint8_t)target, bit_move::capture, KNIGHT, capture_type);
 				l->size++;
-				knight_attacks &= knight_attacks - 1;
+				knight_attacks = reset_lsb(knight_attacks);
 			}
-			knights &= knights - 1;
+			knights = reset_lsb(knights);
 		}
 	}
 
@@ -252,9 +252,9 @@ public:
 				capture_type = b->piece_type_from_index(target);
 				l->moves[l->size] = bit_move((uint8_t)origin, (uint8_t)target, bit_move::capture, BISHOP, capture_type);
 				l->size++;
-				bishop_attacks &= bishop_attacks - 1;
+				bishop_attacks = reset_lsb(bishop_attacks);
 			}
-			bishops &= bishops - 1;
+			bishops = reset_lsb(bishops);
 		}
 	}
 
@@ -306,26 +306,29 @@ public:
 	static void generate_queen_qmoves(bitboard* b, movelist* l);
 	static void generate_queen_cmoves(bitboard* b, movelist* l);
 
+	// TODO: Castling bugfix...
 	template<bool side_to_move>
 	static void generate_king_qmoves(bitboard* b, movelist* l)
 	{
+		// if white has the move
 		if (!side_to_move) {
-			if ((b->castling_rights & b->w_kingside) != 0 && (b->occupancy[2] & w_kingside_castling_mask) == 0ULL) {
-				l->moves[l->size] = bit_move(4, 6, bit_move::kingside_castle, KING, EMPTY);
+			if ((b->castling_rights & b->w_kingside) && !(b->occupancy[2] & w_kingside_castling_mask)) {
+				l->moves[l->size] = bit_move(E1, G1, bit_move::kingside_castle, KING, EMPTY);
 				l->size++;
 			}
-			if ((b->castling_rights & b->w_queenside) != 0 && (b->occupancy[2] & w_queenside_castling_mask) == 0ULL) {
-				l->moves[l->size] = bit_move(4, 2, bit_move::queenside_castle, KING, EMPTY);
+			if ((b->castling_rights & b->w_queenside) && !(b->occupancy[2] & w_queenside_castling_mask)) {
+				l->moves[l->size] = bit_move(E1, C1, bit_move::queenside_castle, KING, EMPTY);
 				l->size++;
 			}
 		}
+		// if black has the move
 		else {
-			if ((b->castling_rights & b->b_kingside) != 0 && (b->occupancy[2] & b_kingside_castling_mask) == 0ULL) {
-				l->moves[l->size] = bit_move(60, 62, bit_move::kingside_castle, KING, EMPTY);
+			if ((b->castling_rights & b->b_kingside) && !(b->occupancy[2] & b_kingside_castling_mask)) {
+				l->moves[l->size] = bit_move(E8, G8, bit_move::kingside_castle, KING, EMPTY);
 				l->size++;
 			}
-			if ((b->castling_rights & b->b_queenside) != 0 && (b->occupancy[2] & b_queenside_castling_mask) == 0ULL) {
-				l->moves[l->size] = bit_move(60, 58, bit_move::queenside_castle, KING, EMPTY);
+			if ((b->castling_rights & b->b_queenside) != 0 && !(b->occupancy[2] & b_queenside_castling_mask)) {
+				l->moves[l->size] = bit_move(E8, C8, bit_move::queenside_castle, KING, EMPTY);
 				l->size++;
 			}
 		}

@@ -40,14 +40,14 @@ public:
 	void print_board();
 	~bitboard();
 	char castling_rights = 0;
-	enum castling_rights_e
+	const enum castling_rights_e
 	{
 		w_kingside = 1,
 		w_queenside = 2,
 		b_kingside = 4,
 		b_queenside = 8
 	};
-	int8_t ep_target_square = -1;
+	uint64_t ep_target_square = 0ULL;
 
 	bool is_sane();
 
@@ -55,13 +55,13 @@ public:
 	template<bool was_generated>
 	bool is_legal(bit_move* m)
 	{
-		uint8_t flags = m->get_flags();
-		uint8_t origin = m->get_origin();
-		uint8_t target = m->get_target();
-		uint8_t type = m->get_piece_type();
-		uint8_t piece = (side_to_move) ? type + BLACK_PAWN : type;
-		uint8_t captured_type = m->get_captured_type();
-		uint8_t captured_piece = (side_to_move) ? captured_type : captured_type + BLACK_PAWN;
+		const uint8_t flags = m->get_flags();
+		const uint8_t origin = m->get_origin();
+		const uint8_t target = m->get_target();
+		const uint8_t type = m->get_piece_type();
+		const uint8_t piece = (side_to_move) ? type + BLACK_PAWN : type;
+		const uint8_t captured_type = m->get_captured_type();
+		const uint8_t captured_piece = (side_to_move) ? captured_type : captured_type + BLACK_PAWN;
 		
 		// if the move was not generated we need to check
 		// the availability of a piece which is able to move 
@@ -149,9 +149,11 @@ public:
 	}
 	void make_move(bit_move* m);
 	void unmake_move();
+	template<bool> void place_piece(uint8_t piece, uint8_t target);
+	template<bool> void unset_piece(uint8_t target);
+	template<bool> void replace_piece(uint8_t piece, uint8_t target);
 	void make_null_move();
 	void unmake_null_move();
-	void update_zobrist_key(bit_move* m);
 	uint8_t piece_type_from_index(unsigned long i);
 	std::vector<board_state> game_history = {};
 	uint16_t fifty_move_rule_counter = 0;

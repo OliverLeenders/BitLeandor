@@ -56,7 +56,7 @@ uint64_t perft::run_perft_console(bitboard* b, int depth)
 			m = l.moves[i];
 			if (b->is_legal<true>(&m))
 			{
-				std::cout << bit_move::to_string(m) << " (" << (int)m.get_flags() << "): ";
+				std::cout << bit_move::to_string(m) << ": ";
 				
 				b->make_move(&m);
 				
@@ -66,7 +66,9 @@ uint64_t perft::run_perft_console(bitboard* b, int depth)
 				b->unmake_move();
 			}
 			else {
-				std::cout << "[" << bit_move::to_string(m) << "] (" << (int)m.get_flags() << "): ";
+				// std::cout << "\t[" << bit_move::to_string(m) << "] (" << (int)m.get_flags() << "): " << std::endl;
+				// b->print_board();
+				// std::cout << std::endl;
 			}
 		}
 		std::cout << "Total nodes: " << nodes << std::endl;

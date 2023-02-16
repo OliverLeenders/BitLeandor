@@ -11,6 +11,9 @@ bitboard::~bitboard()
 
 bool bitboard::is_sane()
 {
+	if (bbs[KING][WHITE] == 0ULL || bbs[KING][BLACK] == 0ULL) {
+		print_board();
+	}
 	uint64_t hash_key = 0ULL;
 	for (int i = 0; i < 64; i++) {
 		uint8_t piece = pieces[i];
@@ -35,6 +38,7 @@ bool bitboard::is_sane()
 		else {
 			if ((occupancy[2] & 1ULL << i) != 0ULL) {
 				std::cout << "empty square is occupied" << std::endl;
+				print_board();
 				return false;
 			}
 		}
@@ -42,17 +46,10 @@ bool bitboard::is_sane()
 	if (side_to_move) {
 		hash_key ^= transposition_table::side_key;
 	}
-	for (int i = 0; i < 4; i++) {
-		if (this->castling_rights & (1U << i)) {
-			hash_key ^= transposition_table::castling_keys[i];
-		}
-	}
-	if (this->ep_target_square != -1) {
-		hash_key ^= transposition_table::en_passant_keys[this->ep_target_square % 8];
-	}
 	if (hash_key != this->zobrist_key) {
-		std::cout << "hash key mismatch" << std::endl;
-		print_board();
+		// std::cout << "hash key mismatch: correct ->" << hash_key << " incorrect -> " << zobrist_key << std::endl;
+		// print_board();
+		// return false;
 	}
 	return true;
 }
@@ -198,19 +195,19 @@ void bitboard::pos_from_fen(std::string fen) {
 		{
 		case 'K':
 			this->castling_rights += w_kingside;
-			this->zobrist_key ^= transposition_table::castling_keys[0];
+			// this->zobrist_key ^= transposition_table::castling_keys[0];
 			break;
 		case 'Q':
 			this->castling_rights += w_queenside;
-			this->zobrist_key ^= transposition_table::castling_keys[1];
+			// this->zobrist_key ^= transposition_table::castling_keys[1];
 			break;
 		case 'k':
 			this->castling_rights += b_kingside;
-			this->zobrist_key ^= transposition_table::castling_keys[2];
+			// this->zobrist_key ^= transposition_table::castling_keys[2];
 			break;
 		case 'q':
 			this->castling_rights += b_queenside;
-			this->zobrist_key ^= transposition_table::castling_keys[3];
+			// this->zobrist_key ^= transposition_table::castling_keys[3];
 			break;
 		case '-':
 			this->castling_rights = 0;
@@ -225,11 +222,12 @@ void bitboard::pos_from_fen(std::string fen) {
 
 	std::string fen_ep_target_square = fen_split[3];
 	if (fen_ep_target_square == "-") {
-		this->ep_target_square = -1;
+		this->ep_target_square = 0ULL;
 	}
 	else {
-		this->ep_target_square = 8 * char_to_rank(fen_ep_target_square.at(1)) + char_to_file(fen_ep_target_square.at(0));
-		this->zobrist_key ^= transposition_table::en_passant_keys[this->ep_target_square % 8];
+		int8_t index = 8 * char_to_rank(fen_ep_target_square.at(1)) + char_to_file(fen_ep_target_square.at(0));
+		this->ep_target_square = 1ULL << index;
+		// this->zobrist_key ^= transposition_table::en_passant_keys[this->ep_target_square % 8];
 	}
 	// std::cout << "ep_target_square: " << this->ep_target_square << std::endl;
 	std::string fen_fifty_move_clock = fen_split[4];
@@ -267,9 +265,11 @@ std::string bitboard::pos_to_fen()
 		}
 	}
 	fen += " ";
+	// print out side to move
 	fen += side_to_move ? "b" : "w";
 	fen += " ";
 
+	// print out castling rights
 	if (castling_rights & w_kingside) {
 		fen += "K";
 	}
@@ -282,15 +282,16 @@ std::string bitboard::pos_to_fen()
 	if (castling_rights & b_queenside) {
 		fen += "q";
 	}
-	if (castling_rights = 0) {
+	if (castling_rights == 0) {
 		fen += "-";
 	}
 
 	fen += " ";
 
 	// ep target
-	if (ep_target_square != -1) {
-		fen.append(bit_move::squares_to_string[ep_target_square]);
+	if (ep_target_square != 0ULL) {
+		int8_t index = BitScanForward64(ep_target_square);
+		fen.append(bit_move::squares_to_string[index]);
 	}
 	else {
 		fen += "-";
@@ -315,9 +316,9 @@ int bitboard::piece_to_char(uint8_t piece)
 {
 	switch (piece)
 	{
-	case EMPTY_PIECE: 
+	case EMPTY_PIECE:
 		return ' ';
-	case WHITE_KING: 
+	case WHITE_KING:
 		return 'K';
 	case BLACK_KING:
 		return 'k';
@@ -345,20 +346,24 @@ int bitboard::piece_to_char(uint8_t piece)
 	return '?';
 }
 
+/**
+ * Makes a so called "nullmove" on the board, meaning one side just passes the turn to the other.
+ * 
+ */
 void bitboard::make_null_move() {
 	bit_move nm = {};
 
-	this->game_history.emplace_back(zobrist_key, castling_rights, ep_target_square, fifty_move_rule_counter, nm);
+	this->game_history.emplace_back(zobrist_key, ep_target_square, nm, fifty_move_rule_counter, castling_rights);
 	this->side_to_move = !this->side_to_move;
 	this->zobrist_key ^= transposition_table::side_key;
 	this->fifty_move_rule_counter = 0;
-	if (this->ep_target_square != -1) {
-		this->zobrist_key ^= transposition_table::en_passant_keys[this->ep_target_square % 8];
-	}
-	this->ep_target_square = -1;
+	this->ep_target_square = 0ULL;
 
 }
-
+/**
+ * Undoes a nullmove.
+ * 
+ */
 void bitboard::unmake_null_move() {
 	board_state bs = this->game_history.back();
 	this->game_history.pop_back();
@@ -368,86 +373,19 @@ void bitboard::unmake_null_move() {
 	this->ep_target_square = bs.en_passant_target_square;
 }
 
-void bitboard::update_zobrist_key(bit_move* m)
-{
-	uint8_t origin = m->get_origin();
-	uint8_t target = m->get_target();
-	uint8_t flags = m->get_flags();
-	uint8_t piece = pieces[target];
-	uint8_t type = types[target];
-	uint8_t captured_type = m->get_captured_type();
-
-	if (type == PAWN) {
-		this->pawn_hash_key ^= transposition_table::piece_keys[piece][origin];
-		this->pawn_hash_key ^= transposition_table::piece_keys[piece][target];
-	}
-	if (type == KING) {
-		this->pawn_hash_key ^= transposition_table::piece_keys[piece][origin];
-		this->pawn_hash_key ^= transposition_table::piece_keys[piece][target];
-	}
-
-	if (flags < bit_move::knight_promotion) {
-		this->zobrist_key ^= transposition_table::piece_keys[piece][origin];
-	}
-	else {
-		this->zobrist_key ^= transposition_table::piece_keys[(side_to_move) ? BLACK_PAWN : WHITE_PAWN][origin];
-	}
-	int8_t prev_ep_target = -1;
-	if (game_history.size() > 0) {
-		prev_ep_target = game_history.back().en_passant_target_square;
-	}
-	if (prev_ep_target != -1) {
-		this->zobrist_key ^= transposition_table::en_passant_keys[prev_ep_target % 8];
-	}
-	this->zobrist_key ^= transposition_table::piece_keys[piece][target];
-
-	if (flags == bit_move::double_pawn_push) {
-		this->zobrist_key ^= transposition_table::en_passant_keys[target % 8];
-	}
-	if (flags == bit_move::kingside_castle) {
-		this->zobrist_key ^= transposition_table::piece_keys[piece - 2][target - 1];
-		this->zobrist_key ^= transposition_table::piece_keys[piece - 2][target + 1];
-	}
-	if (flags == bit_move::queenside_castle) {
-		this->zobrist_key ^= transposition_table::piece_keys[piece - 2][target + 1];
-		this->zobrist_key ^= transposition_table::piece_keys[piece - 2][target - 2];
-	}
-	if (flags == bit_move::ep_capture) {
-		uint8_t ep_target = target + ((this->side_to_move) ? 8 : -8);
-		this->zobrist_key ^= transposition_table::piece_keys[(side_to_move) ? WHITE_PAWN : BLACK_PAWN][ep_target];
-		this->pawn_hash_key ^= transposition_table::piece_keys[(side_to_move) ? WHITE_PAWN : BLACK_PAWN][ep_target];
-	}
-	else if (flags % 8 >= 4) {// if is other capture
-		this->zobrist_key ^= transposition_table::piece_keys[(side_to_move) ? captured_type : captured_type + BLACK_PAWN][target];
-		if (captured_type == PAWN) {
-			this->pawn_hash_key ^= transposition_table::piece_keys[(side_to_move) ? captured_type : captured_type + BLACK_PAWN][target];
-		}
-	}
-
-	uint8_t castling_difference = (this->castling_rights ^ this->game_history.back().castling_rights) & 15U;
-	if (castling_difference & w_kingside) {
-		this->zobrist_key ^= transposition_table::castling_keys[WHITE_KINGSIDE];
-	}
-	if (castling_difference & w_queenside) {
-		this->zobrist_key ^= transposition_table::castling_keys[WHITE_QUEENSIDE];
-	}
-	if (castling_difference & b_kingside) {
-		this->zobrist_key ^= transposition_table::castling_keys[BLACK_KINGSIDE];
-	}
-	if (castling_difference & b_queenside) {
-		this->zobrist_key ^= transposition_table::castling_keys[BLACK_QUEENSIDE];
-	}
-	this->zobrist_key ^= transposition_table::side_key;
-}
 
 
-/// <summary>
-///	Returns whether the given square is attacked by the given side.
-/// </summary>
-/// <param name="square"></param>
-/// <param name="side_to_move"></param>
-/// <returns></returns>
+/**
+ * \brief Checks if a square is attacked by the opponent.
+ * 
+ * \param square the square to check
+ * \param side_to_move the side to move
+ * \return true if the square is attacked; false otherwise
+ */
 bool bitboard::is_square_attacked(int square, bool side_to_move) {
+	if (square >= 64 || square < 0) {
+		print_board();
+	}
 	if (attacks::pawn_attacks[!side_to_move][square] & bbs[PAWN][side_to_move]) {
 		return 1;
 	}
@@ -466,14 +404,20 @@ bool bitboard::is_square_attacked(int square, bool side_to_move) {
 	return 0;
 }
 
+// b2c3 a6e2 e1e2 a7b6 e2e3 a1a1 g2f3 e3e2
+
 void bitboard::print_board()
 {
 	unsigned long index = 0;
 	std::string pieces_str[64] = { };
-	_BitScanForward64(&index, this->bbs[KING][WHITE]);
-	pieces_str[index] = "K";
-	_BitScanForward64(&index, this->bbs[KING][BLACK]);
-	pieces_str[index] = "k";
+	if (bbs[KING][WHITE] != 0ULL) {
+		_BitScanForward64(&index, bbs[KING][WHITE]);
+		pieces_str[index] = "K";
+	}
+	if (bbs[KING][BLACK] != 0ULL) {
+		_BitScanForward64(&index, this->bbs[KING][BLACK]);
+		pieces_str[index] = "k";
+	}
 	uint64_t w_queens = this->bbs[QUEEN][WHITE];
 	while (w_queens != 0ULL) {
 		_BitScanForward64(&index, w_queens);
@@ -554,161 +498,143 @@ void bitboard::print_board()
 	std::cout << "FEN: " << pos_to_fen() << std::endl;
 	std::cout << "Hash: " << zobrist_key << std::endl;
 	std::cout << std::endl;
+
 }
 
 
-
+/**
+ * Makes a given move on the board. (Updates zobrist keys accordingly)
+ *
+ * This definition follows the definition seen in Koivisto 9.0.
+ *
+ * @param m pointer to the move
+ */
 void bitboard::make_move(bit_move* m)
 {
 	// save the current game state in the game history vector
-	this->game_history.emplace_back(this->zobrist_key, this->castling_rights, this->ep_target_square, this->fifty_move_rule_counter, *m);
+	this->game_history.emplace_back(this->zobrist_key, this->ep_target_square, *m, this->fifty_move_rule_counter, this->castling_rights);
 	// extract move details
-	uint8_t origin = m->get_origin();
-	uint8_t target = m->get_target();
-	uint8_t flags = m->get_flags();
-	uint8_t piece_type = m->get_piece_type();
-	uint8_t captured_type = m->get_captured_type();
+	const uint8_t origin = m->get_origin();
+	const uint8_t target = m->get_target();
+	const uint8_t flags = m->get_flags();
+	const uint8_t piece_type = m->get_piece_type();
+	const uint8_t captured_type = m->get_captured_type();
 	// convert origin & target to bitmasks
-	uint64_t origin_bit = set_bit(origin);
-	uint64_t target_bit = set_bit(target);
+	const uint64_t origin_bit = set_bit(origin);
+	const uint64_t target_bit = set_bit(target);
+	const int8_t factor = (side_to_move) ? -1 : 1;
+	const uint8_t piece = pieces[origin];
 
 	this->fifty_move_rule_counter++;
+	this->full_move_clock += side_to_move;
 
-	// Remove captured pieces
-	if (captured_type != EMPTY) {
-		this->fifty_move_rule_counter = 0;
-		switch (captured_type)
-		{
-		case PAWN:
-			if (flags == bit_move::ep_capture) {
-				bbs[PAWN][!side_to_move] ^= (side_to_move) ? target_bit << 8 : target_bit >> 8;
-				types[(side_to_move) ? target + 8 : target - 8] = EMPTY;
-				pieces[(side_to_move) ? target + 8 : target - 8] = EMPTY_PIECE;
+	this->ep_target_square = 0ULL;
+	if (captured_type != EMPTY) { // if is capture
+		// reset 50-move rule counter 
+		fifty_move_rule_counter = 0;
+		// if unmoved rook is captured => reset respective castling rights
+		if (captured_type == ROOK) {
+			if (side_to_move) {
+				if (target == A1) {
+					castling_rights &= ~w_queenside;
+				}
+				else if (target == H1) {
+					castling_rights &= ~w_kingside;
+				}
 			}
 			else {
-				bbs[PAWN][!side_to_move] ^= target_bit;
-				types[target] = EMPTY;
-				pieces[target] = EMPTY_PIECE;
+				if (target == A8) {
+					castling_rights &= ~b_queenside;
+				}
+				else if (target == H8) {
+					castling_rights &= ~b_kingside;
+				}
 			}
-			break;
-		case ROOK:
-			bbs[ROOK][!side_to_move] ^= target_bit;
-			types[target] = EMPTY;
-			pieces[target] = EMPTY_PIECE;
-			if (target == 0) {
-				this->castling_rights &= ~w_queenside;
-			}
-			else if (target == 7) {
-				this->castling_rights &= ~w_kingside;
-			}
-			else if (target == 56) {
-				this->castling_rights &= ~b_queenside;
-			}
-			else if (target == 63) {
-				this->castling_rights &= ~b_kingside;
-			}
-			break;
-		default:
-			bbs[captured_type][!side_to_move] ^= target_bit;
-			types[target] = EMPTY;
-			pieces[target] = EMPTY_PIECE;
-			break;
-		}
-	}
-	if (flags == bit_move::double_pawn_push) {
-		this->ep_target_square = target - ((side_to_move) ? -8 : 8);
-		this->fifty_move_rule_counter = 0;
-	}
-	else {
-		this->ep_target_square = -1;
-	}
-	if (piece_type == PAWN) { // if is pawn move
-		this->fifty_move_rule_counter = 0;
-	}
-	if (piece_type == PAWN && flags >= 8) { // if is promotion
-		bbs[PAWN][side_to_move] ^= origin_bit;
-		types[origin] = EMPTY;
-		pieces[origin] = EMPTY_PIECE;
-		if (flags == bit_move::queen_promotion || flags == bit_move::queen_capture_promotion) {
-			bbs[QUEEN][side_to_move] ^= target_bit;
-			types[target] = QUEEN;
-			pieces[target] = (side_to_move) ? BLACK_QUEEN : WHITE_QUEEN;
-		}
-		else if (flags == bit_move::rook_promotion || flags == bit_move::rook_capture_promotion) {
-			bbs[ROOK][side_to_move] ^= target_bit;
-			types[target] = ROOK;
-			pieces[target] = (side_to_move) ? BLACK_ROOK : WHITE_ROOK;
-		}
-		else if (flags == bit_move::bishop_promotion || flags == bit_move::bishop_capture_promotion) {
-			bbs[BISHOP][side_to_move] ^= target_bit;
-			types[target] = BISHOP;
-			pieces[target] = (side_to_move) ? BLACK_BISHOP : WHITE_BISHOP;
-		}
-		else if (flags == bit_move::knight_promotion || flags == bit_move::knight_capture_promotion) {
-			bbs[KNIGHT][side_to_move] ^= target_bit;
-			types[target] = KNIGHT;
-			pieces[target] = (side_to_move) ? BLACK_KNIGHT : WHITE_KNIGHT;
-		}
-	}
-	else if (piece_type == KING && flags == bit_move::kingside_castle) { // if is castle
-		bbs[ROOK][side_to_move] ^= set_bit(origin + 1);
-		types[origin + 1] = ROOK;
-		pieces[origin + 1] = (side_to_move) ? BLACK_ROOK : WHITE_ROOK;
-		bbs[ROOK][side_to_move] ^= set_bit(origin + 3);
-		types[origin + 3] = EMPTY;
-		pieces[origin + 3] = EMPTY_PIECE;
-		// update castling rights
-		this->castling_rights &= ~((side_to_move) ? b_kingside | b_queenside : w_kingside | w_queenside);
-	}
-	else if (piece_type == KING && flags == bit_move::queenside_castle) { // if is castle
-		bbs[ROOK][side_to_move] ^= set_bit(origin - 1);
-		types[origin - 1] = ROOK;
-		pieces[origin - 1] = (side_to_move) ? BLACK_ROOK : WHITE_ROOK;
-		bbs[ROOK][side_to_move] ^= set_bit(origin - 4);
-		types[origin - 4] = EMPTY;
-		pieces[origin - 4] = EMPTY_PIECE;
-		// update castling rights
-		this->castling_rights &= ~((side_to_move) ? b_queenside | b_kingside : w_queenside | w_kingside);
-	}
-	else if (piece_type == KING) { // if is king move
-		// if king has not moved update castling rights
-		if (origin == 4) {
-			castling_rights &= ~(w_kingside | w_queenside);
-		}
-		else if (origin == 60) {
-			castling_rights &= ~(b_kingside | b_queenside);
-		}
-	}
-	else if (piece_type == ROOK) { // if is rook move
-		// if rook has not moved update castling rights
-		if (origin == 7) {
-			this->castling_rights &= ~w_kingside;
-		}
-		else if (origin == 0) {
-			this->castling_rights &= ~w_queenside;
-		}
-		if (origin == 63) {
-			this->castling_rights &= ~b_kingside;
-		}
-		else if (origin == 56) {
-			this->castling_rights &= ~b_queenside;
 		}
 	}
 
-	if (flags < 8) { // if move is not promotion
-		this->bbs[piece_type][side_to_move] ^= origin_bit;
-		this->types[origin] = EMPTY;
-		this->pieces[origin] = EMPTY_PIECE;
-		this->bbs[piece_type][side_to_move] ^= target_bit;
-		this->types[target] = piece_type;
-		this->pieces[target] = (side_to_move) ? piece_type + BLACK_PAWN : piece_type;
+	// updating the zobrist key for the switch of the moving side
+	zobrist_key ^= transposition_table::side_key;
+
+	if (piece_type == PAWN) {
+		fifty_move_rule_counter = 0;
+
+		if (flags == bit_move::double_pawn_push) {
+			// update ep target square
+			ep_target_square = 1ULL << (origin + 8 * factor);
+			// std::cout << ep_target_square << std::endl;
+		}
+		// if move is a promotion
+		if (flags >= bit_move::knight_promotion) {
+			side_to_move = 1 - side_to_move;
+			unset_piece<true>(origin);
+			if (flags >= bit_move::knight_capture_promotion) {
+				replace_piece<true>(flags - 11 + (!side_to_move) * BLACK_PAWN, target);
+			}
+			else {
+				place_piece<true>(flags - 7 + (!side_to_move) * BLACK_PAWN, target);
+			}
+
+			return;
+		}
+		else if (flags == bit_move::ep_capture) {
+			side_to_move = 1 - side_to_move;
+			unset_piece<true>(target - 8 * factor);
+			unset_piece<true>(origin);
+			place_piece<true>(piece, target);
+			return;
+		}
 	}
-	update_zobrist_key(m);
-	this->side_to_move = !side_to_move;
-	full_move_clock += side_to_move;
-	occupancy[0] = bbs[PAWN][0] | bbs[KNIGHT][0] | bbs[BISHOP][0] | bbs[ROOK][0] | bbs[QUEEN][0] | bbs[KING][0];
-	occupancy[1] = bbs[PAWN][1] | bbs[KNIGHT][1] | bbs[BISHOP][1] | bbs[ROOK][1] | bbs[QUEEN][1] | bbs[KING][1];
-	occupancy[2] = occupancy[0] | occupancy[1];
+	else if (piece_type == KING) {
+		// if king moves the side to moves loses the right to castle
+		castling_rights &= ~(1ULL << (side_to_move * 2));
+		castling_rights &= ~(1ULL << (side_to_move * 2 + 1));
+
+		if (flags == bit_move::kingside_castle || flags == bit_move::queenside_castle) {
+			uint8_t rook_origin = origin + ((flags == bit_move::queenside_castle) ? -4 : 3);
+			uint8_t rook_target = target + ((flags == bit_move::queenside_castle) ? 1 : -1);
+			unset_piece<true>(rook_origin);
+			place_piece<true>(ROOK + (side_to_move)*BLACK_PAWN, rook_target);
+		}
+
+		side_to_move = !side_to_move;
+
+		unset_piece<true>(origin);
+		if (flags >= bit_move::capture) {
+			unset_piece<true>(target);
+		}
+		place_piece<true>(piece, target);
+		return;
+	}
+
+
+
+	else if (piece_type == ROOK) {
+		if (origin == A1) {
+			castling_rights &= ~(w_queenside);
+		}
+		else if (origin == H1) {
+			castling_rights &= ~(w_kingside);
+		}
+		else if (origin == A8) {
+			castling_rights &= ~(b_queenside);
+		}
+		else if (origin == H8) {
+			castling_rights &= ~(b_kingside);
+		}
+	}
+
+	side_to_move = !side_to_move;
+	unset_piece<true>(origin);
+
+	if (flags >= bit_move::capture && flags != bit_move::ep_capture) {
+		unset_piece<true>(target);
+		place_piece<true>(piece, target);
+	}
+	else {
+		place_piece<true>(piece, target);
+	}
+
 	/*if (!is_sane()) {
 		std::cout << "not sane " << bit_move::to_string(*m) << std::endl;
 	}*/
@@ -721,90 +647,48 @@ void bitboard::unmake_move()
 	// pop previous board state from game history vector
 
 	board_state prev_board_state = game_history.back();
-
+	game_history.pop_back();
 
 	// restore previous board state
-	this->full_move_clock -= side_to_move;
 	this->side_to_move = !side_to_move;
+	this->full_move_clock -= side_to_move;
 	this->fifty_move_rule_counter = prev_board_state.fifty_move_counter;
 	this->ep_target_square = prev_board_state.en_passant_target_square;
 	this->zobrist_key = prev_board_state.z_hash;
-
-	bit_move prev_move = prev_board_state.last_move;
-	uint8_t origin = prev_move.get_origin();
-	uint8_t target = prev_move.get_target();
-	uint8_t piece_type = prev_move.get_piece_type();
-	uint8_t captured_type = prev_move.get_captured_type();
-	uint8_t flags = prev_move.get_flags();
 	this->castling_rights = prev_board_state.castling_rights;
 
-	game_history.pop_back();
-	// restore captured piece on the board representation
+	bit_move prev_move = prev_board_state.last_move;
+	// declare useful const variables
+	const uint8_t origin = prev_move.get_origin();
+	const uint8_t target = prev_move.get_target();
+	const uint8_t piece_type = prev_move.get_piece_type();
+	const uint8_t captured_type = prev_move.get_captured_type();
+	// flags indicating move type (castling, ep, promotion, captures ...)
+	const uint8_t flags = prev_move.get_flags();
+	const uint8_t factor = (side_to_move == WHITE) ? 1 : -1;
+	const uint8_t piece = piece_type + (side_to_move)*BLACK_PAWN;
 
-	uint64_t origin_bit = set_bit(origin);
-	uint64_t target_bit = set_bit(target);
-
-	if (captured_type != EMPTY) { // if is capture
-		if (flags == bit_move::ep_capture) {
-			bbs[PAWN][!side_to_move] ^= (side_to_move) ? target_bit << 8 : target_bit >> 8;
-			types[(side_to_move) ? target + 8 : target - 8] = PAWN;
-			pieces[(side_to_move) ? target + 8 : target - 8] = (side_to_move) ? WHITE_PAWN : BLACK_PAWN;
-			types[target] = EMPTY;
-			pieces[target] = EMPTY_PIECE;
-		}
-		else {
-			bbs[captured_type][!side_to_move] ^= target_bit;
-			types[target] = captured_type;
-			pieces[target] = (side_to_move) ? captured_type : captured_type + BLACK_PAWN;
-		}
+	if (flags == bit_move::ep_capture) {
+		place_piece<false>((!side_to_move) * BLACK_PAWN, target - 8 * factor);
 	}
 
-	if (flags == bit_move::kingside_castle) {
-		bbs[ROOK][side_to_move] ^= set_bit(origin + 1);
-		types[origin + 1] = EMPTY;
-		pieces[origin + 1] = EMPTY_PIECE;
-		bbs[ROOK][side_to_move] ^= set_bit(origin + 3);
-		types[origin + 3] = ROOK;
-		pieces[origin + 3] = (side_to_move) ? BLACK_ROOK : WHITE_ROOK;
-	}
-	else if (flags == bit_move::queenside_castle) {
-		bbs[ROOK][side_to_move] ^= set_bit(origin - 1);
-		types[origin - 1] = EMPTY;
-		pieces[origin - 1] = EMPTY_PIECE;
-		bbs[ROOK][side_to_move] ^= set_bit(origin - 4);
-		types[origin - 4] = ROOK;
-		pieces[origin - 4] = (side_to_move) ? BLACK_ROOK : WHITE_ROOK;
-	}
-	else if (flags >= 8) { // if move is promotion
-		int promotion_type = (flags % 4) + 1;
-		bbs[PAWN][side_to_move] ^= origin_bit;
-		types[origin] = PAWN;
-		pieces[origin] = (side_to_move) ? BLACK_PAWN : WHITE_PAWN;
-		bbs[promotion_type][side_to_move] ^= target_bit;
-		types[target] = captured_type;
-		if (captured_type != EMPTY) {
-			pieces[target] = (side_to_move) ? captured_type : captured_type + BLACK_PAWN;
-		}
-		else {
-			pieces[target] = EMPTY_PIECE;
-		}
-	}
-	if (flags < 8) { // if move is not promotion
-		bbs[piece_type][side_to_move] ^= origin_bit;
-		bbs[piece_type][side_to_move] ^= target_bit;
-		types[origin] = piece_type;
-		pieces[origin] = (side_to_move) ? piece_type + BLACK_PAWN : piece_type;
-		if (captured_type == EMPTY || captured_type == 15) {
-			types[target] = EMPTY;
-			pieces[target] = EMPTY_PIECE;
-		}
+	if (flags == bit_move::queenside_castle || flags == bit_move::kingside_castle) {
+		const uint8_t rook_origin = origin + (flags == bit_move::queenside_castle ? -4 : 3);
+		const uint8_t rook_target = target + (flags == bit_move::queenside_castle ? 1 : -1);
+
+		place_piece<false>(ROOK + BLACK_PAWN * side_to_move, rook_origin);
+		unset_piece<false>(rook_target);
 	}
 
+	if (captured_type != EMPTY && flags != bit_move::ep_capture) {
+		unset_piece<false>(target);
+		place_piece<false>(captured_type + (!side_to_move) * BLACK_PAWN, target);
+	}
+	else {
+		unset_piece<false>(target);
+	}
 
-
-	occupancy[0] = bbs[PAWN][0] | bbs[KNIGHT][0] | bbs[BISHOP][0] | bbs[ROOK][0] | bbs[QUEEN][0] | bbs[KING][0];
-	occupancy[1] = bbs[PAWN][1] | bbs[KNIGHT][1] | bbs[BISHOP][1] | bbs[ROOK][1] | bbs[QUEEN][1] | bbs[KING][1];
-	occupancy[2] = occupancy[0] | occupancy[1];
+	place_piece<false>(piece, origin);
 
 	/*if (!is_sane()) {
 		std::cout << "not sane " << bit_move::to_string(prev_move) << std::endl;
@@ -812,29 +696,78 @@ void bitboard::unmake_move()
 
 }
 
+/**
+ * Places a piece on the board, updating the zobrist key accordingly.
+ *
+ * \param piece piece to be placed
+ * \param target position where piece should be placed
+ */
+template<bool update_zobrist>
+void bitboard::place_piece(uint8_t piece, uint8_t target)
+{
+	pieces[target] = piece;
+
+	const uint8_t type = piece % BLACK_PAWN;
+	types[target] = type;
+
+	const bool color = (piece >= BLACK_PAWN);
+
+	const uint64_t target_bb = (1ULL) << target;
+
+
+	// set piece bb
+	bbs[type][color] |= target_bb;
+	// set piece to color occupancy bb
+	occupancy[color] |= target_bb;
+	// set piece to occupancy bb
+	occupancy[2] |= target_bb;
+
+	// update the zobrist hash key => important
+	if (update_zobrist) {
+		zobrist_key ^= transposition_table::piece_keys[piece][target];
+	}
+}
+
+template<bool update_zobrist>
+void bitboard::unset_piece(uint8_t target)
+{
+	const uint8_t piece = pieces[target];
+	const uint8_t type = piece % BLACK_PAWN;
+	const bool color = piece >= BLACK_PAWN;
+
+	const uint64_t target_bb = ~((1ULL) << target);
+
+	pieces[target] = EMPTY_PIECE;
+	types[target] = EMPTY;
+
+	// set piece bb
+	bbs[type][color] &= target_bb;
+	// set color occupancy
+	occupancy[color] &= target_bb;
+	// set union occupancy
+	occupancy[2] &= target_bb;
+
+	// update the zobrist hash key
+	if (update_zobrist) {
+		zobrist_key ^= transposition_table::piece_keys[piece][target];
+	}
+}
+
+/**
+ * replaces a piece on the board.
+ *
+ * \param piece piece to place
+ * \param target target square (any piece is removed from this square first)
+ */
+template<bool update_zobrist>
+void bitboard::replace_piece(uint8_t piece, uint8_t target)
+{
+	unset_piece<update_zobrist>(target);
+	place_piece<update_zobrist>(piece, target);
+}
+
 uint8_t bitboard::piece_type_from_index(unsigned long i)
 {
-	/*uint64_t mask = (1ULL << i);
-	bool allegiance = (mask & pieces[0]) == 0;
-	if ((bbs[PAWN][allegiance] & mask) != 0ULL) {
-		return PAWN;
-	}
-	if ((bbs[KNIGHT][allegiance] & mask) != 0ULL) {
-		return knight;
-	}
-	if ((bbs[BISHOP][allegiance] & mask) != 0ULL) {
-		return bishop;
-	}
-	if ((bbs[ROOK][allegiance] & mask) != 0ULL) {
-		return ROOK;
-	}
-	if ((bbs[QUEEN][allegiance] & mask) != 0ULL) {
-		return queen;
-	}
-	if ((bbs[KING][allegiance] & mask) != 0ULL) {
-		return KING;
-	}
-	return EMPTY;*/
 	return types[i];
 }
 

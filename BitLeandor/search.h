@@ -41,7 +41,7 @@ public:
 		return ((MAX_PV_SIZE * 2) + 1 - ply) / 2; // depth_left * depth_left / 2
 	}
 	static int alpha_beta(bitboard* b, int depth, int alpha, int beta, int ply);
-	static int search_iterative_deepening(bitboard* b, int depth);
+	static int search_iterative_deepening(bitboard* b, int depth, bool quiet);
 	static int quiescence(bitboard* b, int alpha, int beta, int ply);
 	static void update_PV(bit_move* m, int depth);
 	static const int mvv_lva[6][6];
