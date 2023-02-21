@@ -37,6 +37,8 @@ public:
 		return promotion_candidates != 0ULL;
 	}
 	
+	uint8_t king_positions[2] = { 0U, 0U };
+
 	void print_board();
 	~bitboard();
 	char castling_rights = 0;
@@ -138,8 +140,8 @@ public:
 			}
 		}
 		make_move(m);
-		uint8_t king_pos = BitScanForward64(bbs[KING][!side_to_move]);
-		if (is_square_attacked(king_pos, side_to_move)) {
+		// uint8_t king_pos = BitScanForward64(bbs[KING][!side_to_move]);
+		if (is_square_attacked(king_positions[!side_to_move], side_to_move)) {
 			unmake_move();
 			return false;
 		}

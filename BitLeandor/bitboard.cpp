@@ -158,6 +158,7 @@ void bitboard::pos_from_fen(std::string fen) {
 					this->bbs[KING][0] |= set_bit(board_index);
 					this->types[board_index] = KING;
 					this->pieces[board_index] = WHITE_KING;
+					this->king_positions[WHITE] = board_index;
 					this->zobrist_key ^= transposition_table::piece_keys[WHITE_KING][board_index];
 					this->pawn_hash_key ^= transposition_table::piece_keys[WHITE_KING][board_index];
 					break;
@@ -165,6 +166,7 @@ void bitboard::pos_from_fen(std::string fen) {
 					this->bbs[KING][1] |= set_bit(board_index);
 					this->types[board_index] = KING;
 					this->pieces[board_index] = BLACK_KING;
+					this->king_positions[BLACK] = board_index;
 					this->zobrist_key ^= transposition_table::piece_keys[BLACK_KING][board_index];
 					this->pawn_hash_key ^= transposition_table::piece_keys[BLACK_KING][board_index];
 					break;
@@ -383,9 +385,6 @@ void bitboard::unmake_null_move() {
  * \return true if the square is attacked; false otherwise
  */
 bool bitboard::is_square_attacked(int square, bool side_to_move) {
-	if (square >= 64 || square < 0) {
-		print_board();
-	}
 	if (attacks::pawn_attacks[!side_to_move][square] & bbs[PAWN][side_to_move]) {
 		return 1;
 	}
@@ -596,7 +595,7 @@ void bitboard::make_move(bit_move* m)
 			unset_piece<true>(rook_origin);
 			place_piece<true>(ROOK + (side_to_move)*BLACK_PAWN, rook_target);
 		}
-
+		king_positions[side_to_move] = target;
 		side_to_move = !side_to_move;
 
 		unset_piece<true>(origin);
@@ -604,6 +603,7 @@ void bitboard::make_move(bit_move* m)
 			unset_piece<true>(target);
 		}
 		place_piece<true>(piece, target);
+		
 		return;
 	}
 
@@ -667,6 +667,10 @@ void bitboard::unmake_move()
 	const uint8_t flags = prev_move.get_flags();
 	const uint8_t factor = (side_to_move == WHITE) ? 1 : -1;
 	const uint8_t piece = piece_type + (side_to_move)*BLACK_PAWN;
+
+	if (piece_type == KING) {
+		king_positions[side_to_move] = origin;
+	}
 
 	if (flags == bit_move::ep_capture) {
 		place_piece<false>((!side_to_move) * BLACK_PAWN, target - 8 * factor);

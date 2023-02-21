@@ -50,7 +50,7 @@ void uci_console() {
 		utility::split_string(split, line);
 		if (split->size() >= 1) {
 			if (split->at(0) == "uci") {
-				std::cout << "id name Leandor 2.0" << std::endl;
+				std::cout << "id name Leandor 2.5.1" << std::endl;
 				std::cout << "id author Oliver Leenders" << std::endl;
 				std::cout << "uciok" << std::endl;
 			}
