@@ -219,16 +219,16 @@ void parse_and_make_move(std::vector<std::string>* split, int i)
 
 	if (is_promotion) {
 		char promotion_char = split->at(i).at(4);
-		if (promotion_char == 'q') {
+		if (promotion_char == 'q' || promotion_char == 'Q') {
 			promotion_type = QUEEN;
 		}
-		else if (promotion_char == 'r') {
+		else if (promotion_char == 'r' || promotion_char == 'R') {
 			promotion_type = ROOK;
 		}
-		else if (promotion_char == 'b') {
+		else if (promotion_char == 'b' || promotion_char == 'B') {
 			promotion_type = BISHOP;
 		}
-		else if (promotion_char == 'n') {
+		else if (promotion_char == 'n' || promotion_char == 'N') {
 			promotion_type = KNIGHT;
 		}
 	}
