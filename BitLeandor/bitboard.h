@@ -138,8 +138,7 @@ public:
 			}
 		}
 		make_move(m);
-		unsigned long king_pos;
-		_BitScanForward64(&king_pos, bbs[KING][!side_to_move]);
+		uint8_t king_pos = BitScanForward64(bbs[KING][!side_to_move]);
 		if (is_square_attacked(king_pos, side_to_move)) {
 			unmake_move();
 			return false;
