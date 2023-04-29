@@ -15,6 +15,8 @@ class search
 {
 public:
 	static const int MAX_PV_SIZE = 256;
+	static const int MAX_DEPTH = 265;
+	static const int MAX_PLY = 256;
 	static const int CAPTURE_SCORE = 100000;
 	static const int KILLER_1_SCORE = 10000;
 	static const int KILLER_2_SCORE = 9999;
@@ -23,16 +25,27 @@ public:
 	static void init_lmr();
 
 	static int DEPTH;
+	static int SELDEPTH;
 	static std::chrono::time_point<std::chrono::steady_clock> ENDTIME;
 	static std::chrono::time_point<std::chrono::steady_clock> STARTTIME;
 	static movelist moves[256];
 	static scorelist scores[256];
+	
 	static int history[2][64][64];
+	static void clear_history();
+
 	static bit_move killers[2][MAX_PV_SIZE];
+	static void clear_killers();
 
 	static transposition_table tt;
 	
-	static bit_move PV[MAX_PV_SIZE][MAX_PV_SIZE];
+	static bit_move PV[MAX_PLY][MAX_PV_SIZE];
+	static int PV_SIZE[MAX_DEPTH];
+	static int prev_pv_size;
+	static void clear_PV();
+	
+	static void gather_and_print_pv(bitboard* b, int score, int curr_depth);
+
 	static bool stop_now;
 
 	static int NODES_SEARCHED;

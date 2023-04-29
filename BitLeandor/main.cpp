@@ -7,11 +7,18 @@
 #include "perft.h"
 #include "search.h"
 #include "transposition_table.h"
+#include "tuner.h"
 #include <fstream>
 
 void uci_console();
 void bench();
+void test_tuner();
 void parse_and_make_move(std::vector<std::string>* split, int i);
+
+// value of K in sigmoid function
+double K = 1.31f;
+
+bit_move parse_move(std::vector<std::string>* split, int i);
 bitboard b = bitboard();
 
 int main() {
@@ -20,6 +27,7 @@ int main() {
 
 	// generate mafics
 	utility::generate_magic_attacks();
+	attacks::init_directional_masks();
 	// initializing evaluation tables
 	evaluator::init_tables();
 	// initializing transposition table
@@ -35,6 +43,8 @@ int main() {
 	// std::string pos = "4k1n1/8/8/8/8/3r4/4P3/4K1N1 w - - 0 1";
 	//std::string pos = "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8";
 	b.pos_from_fen(pos);
+
+
 
 	uci_console();
 
@@ -60,7 +70,10 @@ void uci_console() {
 			}
 
 			else if (split->at(0) == "ucinewgame") {
-				// do nothing
+				search::tt.clear();
+				evaluator::pawn_tt.clear();
+				search::clear_killers();
+				search::clear_history();
 			}
 
 			else if (split->at(0) == "position") {
@@ -88,6 +101,13 @@ void uci_console() {
 							}
 						}
 					}
+				}
+				else if (split->at(1) == "epd") {
+					std::string epd = "";
+					for (int i = 2; i < split->size(); i++) {
+						epd += split->at(i) + " ";
+					}
+					b.pos_from_epd_line(epd);
 				}
 				else if (split->at(1) == "kiwipete") {
 					b.pos_from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1");
@@ -146,6 +166,51 @@ void uci_console() {
 			else if (split->at(0) == "d") {
 				b.print_board();
 			}
+			else if (split->at(0) == "islegal") {
+				if (split->size() == 2) {
+					bit_move m = parse_move(split, 1);
+					if (b.is_legal<false>(&m)) {
+						std::cout << "legal" << std::endl;
+					}
+					else {
+						std::cout << "illegal" << std::endl;
+					}
+				}
+			}
+			else if (split->at(0) == "remove_loud") {
+				tuner::filter_quiet_positions();
+			}
+			else if (split->at(0) == "tune") {
+				tuner::tune(K);
+			}
+			else if (split->at(0) == "test") {
+				//=======================================================//
+				// 
+				// test tuner 
+				// 
+				//=======================================================//
+
+				std::vector<tuner::ttuple> tuples;
+				tuner::init_coefficients(&b, &tuples);
+				for (tuner::ttuple t : tuples) {
+					std::cout << "idx: " << (int)t.index << " w: " << (int)t.white_coefficient << " b: " << (int)t.black_coefficient << std::endl;
+				}
+			}
+			else if (split->at(0) == "MSE") {
+				if (split->size() == 2) {
+					std::ifstream file("quiet-labeled.epd");
+					std::cout << "Mean-Square Error: " << tuner::mean_square_error(std::stod(split->at(1)), 1000000, &file) << std::endl;
+				}
+			}
+			else if (split->at(0) == "eval") {
+				int score = evaluator::eval(&b);
+				int ps_mg = 0;
+				int ps_eg = 0;
+				evaluator::eval_pawn_structure(&b, 0, &ps_mg, &ps_eg);
+				std::cout << "pawn structure midgame: " << ps_mg << std::endl;
+				std::cout << "pawn structure endgame: " << ps_eg << std::endl;
+				std::cout << "total + material + pst: " << score << std::endl;
+			}
 			else if (split->at(0) == "unmake") {
 				if (bit_move::to_string(b.game_history.back().last_move) == "a1a1") {
 					b.unmake_null_move();
@@ -199,12 +264,8 @@ void bench()
 
 }
 
-void parse_and_make_move(std::vector<std::string>* split, int i)
+bit_move parse_move(std::vector<std::string>* split, int i)
 {
-	if (split->at(i) == "a1a1") {
-		b.make_null_move();
-		return;
-	}
 	uint8_t origin = (std::stoi(split->at(i).substr(1, 2)) - 1) * 8 + (split->at(i).at(0) - 'a');
 	uint8_t target = (std::stoi(split->at(i).substr(3, 4)) - 1) * 8 + (split->at(i).at(2) - 'a');
 
@@ -261,6 +322,16 @@ void parse_and_make_move(std::vector<std::string>* split, int i)
 	}
 
 	bit_move m = bit_move(origin, target, flag, b.types[origin], captured_type);
+	return m;
+}
+
+void parse_and_make_move(std::vector<std::string>* split, int i)
+{
+	if (split->at(i) == "a1a1") {
+		b.make_null_move();
+		return;
+	}
+	bit_move m = parse_move(split, i);
 	b.make_move(&m);
 }
 

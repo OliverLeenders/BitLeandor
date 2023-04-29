@@ -4,7 +4,8 @@
 inline int MATE = 100000;
 enum Colors : uint8_t{
 	WHITE = 0,
-	BLACK = 1
+	BLACK = 1,
+	NUM_COLORS = 2
 };
 
 enum Types : uint8_t {
@@ -38,6 +39,12 @@ enum Castling_Rights : uint8_t {
 	WHITE_QUEENSIDE = 1,
 	BLACK_KINGSIDE = 2,
 	BLACK_QUEENSIDE = 3
+};
+
+enum Sides : uint8_t {
+	KINGSIDE = 0,
+	QUEENSIDE = 1,
+	NUM_SIDES = 2
 };
 
 enum Squares : uint8_t {

@@ -80,9 +80,9 @@ uint64_t utility::generate_occupancy_by_index(int index, int bit_count, uint64_t
 }
 
 uint64_t utility::generate_magic_number(int square, int relevant_bits, bool is_bishop) {
-	uint64_t occupancies[4096];
-	uint64_t attacks[4096];
-	uint64_t used_attacks[4096];
+	uint64_t occupancies[4096] = { 0ULL };
+	uint64_t attacks[4096] = { 0ULL };
+	uint64_t used_attacks[4096] = { 0ULL };
 
 	uint64_t attack_mask = is_bishop ? attacks::bishop_attack_masks[square] : attacks::rook_attack_masks[square];
 

@@ -361,3 +361,10 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/BitLeandor/o-deville.epd
+/BitLeandor/tune-quiet.epd
+/BitLeandor/fens_1000.txt
+/BitLeandor/o-deville-quiet.epd
+/BitLeandor/quiet-labeled.epd
+/BitLeandor/tuner.cpp
+BitLeandor/tune.epd

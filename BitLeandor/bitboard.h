@@ -24,19 +24,20 @@ public:
 	uint64_t pawn_hash_key = 0ULL;
 	bool side_to_move = 0;
 	void pos_from_fen(std::string fen);
+	void pos_from_epd_line(std::string epd_l);
 	std::string pos_to_fen();
 	int char_to_rank(char c);
 	int char_to_file(char c);
 	int piece_to_char(uint8_t piece);
 	bool is_square_attacked(int square, bool side_to_move);
-	
+
 	template<bool side_to_move>
 	bool pawns_before_back_rank() {
 		uint64_t rank = (side_to_move) ? second_rank : seventh_rank;
 		uint64_t promotion_candidates = bbs[PAWN][side_to_move] & rank;
 		return promotion_candidates != 0ULL;
 	}
-	
+
 	uint8_t king_positions[2] = { 0U, 0U };
 
 	void print_board();
@@ -54,8 +55,7 @@ public:
 	bool is_sane();
 
 	// templated is legal function needs to be in header-file for some stupid c++ reason...
-	template<bool was_generated>
-	bool is_legal(bit_move* m)
+	template<bool was_generated> bool is_legal(bit_move* m)
 	{
 		const uint8_t flags = m->get_flags();
 		const uint8_t origin = m->get_origin();
@@ -64,19 +64,26 @@ public:
 		const uint8_t piece = (side_to_move) ? type + BLACK_PAWN : type;
 		const uint8_t captured_type = m->get_captured_type();
 		const uint8_t captured_piece = (side_to_move) ? captured_type : captured_type + BLACK_PAWN;
-		
+
 		// if the move was not generated we need to check
 		// the availability of a piece which is able to move 
 		// to that square (and more) stil incomplete -- does
 		// not check vacancy of sliding piece rays
 
 		if (!was_generated) {
+			uint64_t target_bb = 1ULL << target;
+			// some conditions to fail early
 			if (origin == target) {
 				return false;
 			}
-			if (piece != pieces[origin]) {
+			if (type == EMPTY) {
 				return false;
 			}
+			// if the piece is not on the origin square or origin square is empty
+			if (piece != pieces[origin] || pieces[origin] == EMPTY_PIECE) {
+				return false;
+			}
+			// if the move is a quiet move and the target square is not empty
 			if (flags == bit_move::quiet_move) {
 				if (pieces[target] != EMPTY_PIECE) {
 					return false;
@@ -88,7 +95,7 @@ public:
 				}
 			}
 			else if (flags == bit_move::ep_capture) {
-				if (target != ep_target_square) {
+				if (target_bb != ep_target_square) {
 					return false;
 				}
 			}
@@ -101,7 +108,7 @@ public:
 				// if we have no castling right
 				if (!(this->castling_rights & ((side_to_move) ? b_kingside : w_kingside))) {
 					return false;
-				} 
+				}
 				// if the squares are occupied
 				if (pieces[origin + 1] != EMPTY_PIECE || pieces[origin + 2] != EMPTY_PIECE) {
 					return false;
@@ -117,13 +124,58 @@ public:
 					return false;
 				}
 			}
+			if (types[origin] == KNIGHT) {
+				if ((target_bb & attacks::knight_attacks[origin]) == 0ULL) {
+					return false;
+				}
+			}
+			if (types[origin] == KING && flags != bit_move::kingside_castle && flags != bit_move::queenside_castle) {
+				if ((target_bb & attacks::king_attacks[origin]) == 0ULL) {
+					return false;
+				}
+			}
+			if (types[origin] == PAWN) {
+				if (captured_type != EMPTY) {
+					if ((target_bb & attacks::pawn_attacks[side_to_move][origin]) == 0ULL) {
+						return false;
+					}
+				}
+				else {
+					if (side_to_move == WHITE) {
+						if ((target - origin != 16 && origin < 16) && target - origin != 8) {
+							return false;
+						}
+					}
+					else {
+						if ((origin - target != 16 && origin > 47) && origin - target != 8) {
+							return false;
+						}
+					}
+				}
+			}
 			if (types[origin] >= BISHOP && types[origin] <= QUEEN) {
+				// return false if origin and target are not on the same diagonal, file or rank
+				if (types[origin] == BISHOP) { // Bishop
+					if ((target_bb & attacks::diagonal_masks[origin]) == 0ULL) {
+						return false;
+					}
+				}
+
+				if (types[origin] == ROOK) { // Rook
+					if (((1ULL << target) & attacks::horizontal_vertical_masks[origin]) == 0ULL) {
+						return false;
+					}
+				}
+
+				if (types[origin] == QUEEN) {
+					if (((1ULL << target) & (attacks::diagonal_masks[origin] | attacks::horizontal_vertical_masks[origin])) == 0ULL) {
+						return false;
+					}
+				}
+
+
+				// return false if there is a piece between origin and target
 				if ((attacks::squares_between[origin][target] & occupancy[2]) != 0ULL) {
-					/*std::cout << std::endl;
-					print_board();
-					print_bitboard(attacks::squares_between[origin][target]);
-					std::cout << "Move: " << bit_move::to_string(*m) << std::endl;
-					*/
 					return false;
 				}
 

@@ -16,6 +16,17 @@ transposition_table::transposition_table()
 {
 }
 
+void transposition_table::clear()
+{
+	for (int i = 0; i < size; i++) {
+		table[i].key = 0;
+		table[i].depth = 0;
+		table[i].score = VAL_UNKNOWN;
+		table[i].type = 0;
+		table[i].hash_move.move = 0;
+	}
+}
+
 void transposition_table::init_keys()
 {
 	for (int i = 0; i < 12; i++) {
@@ -56,6 +67,7 @@ int transposition_table::probe(uint64_t key, int depth, int ply, int alpha, int 
 		if (entry->depth >= depth) {
 			if (entry->type == tt_entry::EXACT) {
 				int score = entry->score;
+				// if the score is a mate score
 				if (std::abs(score) >= 90000) {
 					return score - utility::sgn(score) * ply;
 				}

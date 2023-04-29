@@ -2,10 +2,13 @@
 
 // defining static variables
 
-bit_move search::PV[MAX_PV_SIZE][MAX_PV_SIZE] = {};
+bit_move search::PV[MAX_PLY][MAX_PV_SIZE] = {};
+int search::PV_SIZE[MAX_DEPTH] = {};
 bit_move search::killers[2][MAX_PV_SIZE] = {};
 int search::history[2][64][64] = { {{0}} };
 int search::DEPTH = 0;
+int search::SELDEPTH = 0;
+int search::prev_pv_size = 0;
 std::chrono::time_point<std::chrono::steady_clock> search::ENDTIME = {};
 std::chrono::time_point<std::chrono::steady_clock> search::STARTTIME = {};
 bool search::stop_now = false;
@@ -27,13 +30,195 @@ const int search::mvv_lva[6][6] = {
 
 int search::lmr[MAX_PV_SIZE][MAX_PV_SIZE] = { {0} };
 
+int search::search_iterative_deepening(bitboard* b, int depth, bool quiet)
+{
+	stop_now = false;
+	int prev_score = 0;
+	bit_move best_move = bit_move();
+	int i;
+	int score = 0;
+	int TOTAL_NODES = 0;
+	prev_pv_size = 0;
+	//**********************************************************//
+	// 															//
+	// iterate from depth 1 to n								//
+	// 															//
+	//**********************************************************//
+
+	STARTTIME = std::chrono::high_resolution_clock::now();
+
+	for (i = 1; i <= depth; i++)
+	{
+		NODES_SEARCHED = 0;
+		QNODES_SEARCHED = 0;
+		DEPTH = i;
+		SELDEPTH = i;
+		score = 0;
+		int num_fails = 0;
+
+		// if depth == 1, search without aspiration windows
+
+		if (i == 1)
+		{
+			score = alpha_beta(b, i, -MATE, MATE, 0);
+			prev_score = score;
+		}
+		else
+		{
+			//========================================================//
+			//
+			// aspiration window search
+			//
+			//========================================================//
+
+			// set aspiration window -- narrow at first
+			int prev_alpha = prev_score - 16;
+			int prev_beta = prev_score + 16;
+
+			// search with aspiration window
+			score = alpha_beta(b, i, prev_alpha, prev_beta, 0);
+
+			// count the number of aspiration window failures
+			num_fails = 0;
+
+			// as long as the score is outside the window, reset PV + bestmove and search again
+			while ((score <= prev_alpha || score >= prev_beta) && !stop_now)
+			{
+
+				// if the score is too low, decrease alpha => increase aspiration window
+				prev_alpha = (score <= prev_alpha) ? prev_alpha - (16 << num_fails) : prev_alpha;
+				// if the score is too high, increase beta => increase aspiration window
+				prev_beta = (score >= prev_beta) ? prev_beta + (16 << num_fails) : prev_beta;
+				// research
+				score = alpha_beta(b, i, prev_alpha, prev_beta, 0);
+				num_fails++;
+			}
+			prev_score = score;
+
+		}
+
+		//========================================================//
+		//
+		// print main info to stdout
+		// 
+		// score, depth, seldepth, pv
+		// 
+		//========================================================//
+
+		if (!quiet) {
+			std::cout << "info depth " << i << " seldepth " << SELDEPTH << " multipv 1";
+
+			if (std::abs(score) < MATE - MAX_PV_SIZE - 1)
+			{
+				// print cp score
+				std::cout << " score cp " << score << " ";
+			}
+			else
+			{
+				// print mate score
+				std::cout << " score mate " << utility::sgn(score) * (MATE - std::abs(score) + 1) / 2 << " ";
+			}
+
+			best_move = PV[0][0];
+			
+			//========================================================//
+			//
+			// print rest of uci info to stdout 
+			// 
+			// nodes, nps
+			//
+			//========================================================//
+
+			std::cout << "nodes " << NODES_SEARCHED << " ";
+
+			int duration_ms = (int)std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - STARTTIME).count();
+			// compute nps
+			int nps = (duration_ms > 0) ? (int)((double)NODES_SEARCHED / ((double)duration_ms / 1000.0)) : 0;
+			std::cout << "nps " << nps << " ";
+
+			std::cout << "tbhits 0 ";
+			std::cout << "time " << duration_ms << " ";
+
+			//========================================================//
+			// 
+			// print PV to stdout 
+			//
+			//========================================================//
+
+			gather_and_print_pv(b, score, i);
+
+			// end the line
+			std::cout << std::endl;
+			
+		}
+		// reset PV-table
+
+		TOTAL_NODES += NODES_SEARCHED;
+		if (stop_now) {
+			break;
+		}
+	}
+
+	if (!quiet)
+		std::cout << "bestmove " << bit_move::to_string(best_move) << std::endl;
+	return TOTAL_NODES;
+}
+
+void search::gather_and_print_pv(bitboard* b, int score, int curr_depth) {
+	bool root_side = b->side_to_move;
+	int j;
+
+	
+	if (PV_SIZE[0] != 0) {
+		std::cout << "pv ";
+
+		for (j = 0; j < PV_SIZE[0]; j++)
+		{
+			bit_move m = PV[0][j];
+			// if move is nullmove, break
+			if (m.move == 0)
+			{
+				break;
+			}
+			// if move is illegal, break
+			if (!b->is_legal<false>(&m) && j < curr_depth)
+			{
+				std::cout << "illegal move in PV! " << bit_move::to_string(m) << std::endl;
+				break;
+			}
+			// record PV in transposition table
+			// if score is NOT mate score
+			if (std::abs(score) < 90000) {
+				tt.set(b->zobrist_key, curr_depth - j, j, (b->side_to_move == root_side) ? score : -score, tt_entry::EXACT, m);
+			}
+			// if score is mate score, scores need to reflect distance to mate as they are stored in the transposition table
+			else {
+				int ply_summand = utility::sgn(score) * j;
+				int score_corr = score + ply_summand;
+				tt.set(b->zobrist_key, curr_depth - j, j, (b->side_to_move == root_side) ? score_corr : -score_corr, tt_entry::EXACT, m);
+			}
+			b->make_move(&m);
+			std::cout << bit_move::to_string(search::PV[0][j]) << " ";
+		}
+		// unmake PV moves to restore board state
+		for (; j > 0; j--)
+		{
+			b->unmake_move();
+		}
+	}
+	prev_pv_size = PV_SIZE[0];
+
+	clear_PV();
+
+}
+
 int search::quiescence(bitboard* b, int alpha, int beta, int ply)
 {
 	NODES_SEARCHED++;
 	QNODES_SEARCHED++;
 
-	bit_move hash_move = bit_move();
-	/*int hash_score = tt.probe_qsearch(b->zobrist_key, ply, alpha, beta, &hash_move);
+	/*bit_move hash_move = bit_move();
+	int hash_score = tt.probe_qsearch(b->zobrist_key, ply, alpha, beta, &hash_move);
 	if (hash_score != tt.VAL_UNKNOWN)
 	{
 		return hash_score;
@@ -41,7 +226,7 @@ int search::quiescence(bitboard* b, int alpha, int beta, int ply)
 
 	unsigned long king_pos;
 	_BitScanForward64(&king_pos, b->bbs[KING][b->side_to_move]);
-	
+
 	bool is_check = b->is_square_attacked(king_pos, !b->side_to_move);
 
 	int stand_pat;
@@ -58,20 +243,20 @@ int search::quiescence(bitboard* b, int alpha, int beta, int ply)
 		return beta;
 	}
 	// delta pruning
-	// int big_delta = 950;
-	// bool promotion_possible = false;
-	// if (b->side_to_move) {
-	// 	promotion_possible = b->pawns_before_back_rank<true>();
-	// }
-	// else {
-	// 	promotion_possible = b->pawns_before_back_rank<false>();
-	// }
-	// if (promotion_possible) {
-	// 	big_delta += 750;
-	// }
-	// if (stand_pat + big_delta < alpha) {
-	// 	return alpha;
-	// }
+	/*int big_delta = 950;
+	bool promotion_possible = false;
+	if (b->side_to_move) {
+		promotion_possible = b->pawns_before_back_rank<true>();
+	}
+	else {
+		promotion_possible = b->pawns_before_back_rank<false>();
+	}
+	if (promotion_possible) {
+		big_delta += 750;
+	}
+	if (stand_pat + big_delta < alpha) {
+		return alpha;
+	}*/
 
 	if (stand_pat > alpha)
 	{
@@ -150,20 +335,17 @@ void search::init_lmr()
 
 int search::alpha_beta(bitboard* b, int depth, int alpha, int beta, int ply)
 {
+	// if time is up fail low
+	PV_SIZE[ply] = 0;
 	if (stop_now)
 	{
 		return alpha;
 	}
-
+	// check if time is up or so
 	if (NODES_SEARCHED % 2048 == 0)
 	{
 		communicate();
 	}
-
-	unsigned long king_pos;
-	bool side_to_move = b->side_to_move;
-	_BitScanForward64(&king_pos, b->bbs[KING][side_to_move]);
-	bool is_check = b->is_square_attacked(king_pos, !side_to_move);
 
 	//**********************************************************//
 	//															//
@@ -171,6 +353,12 @@ int search::alpha_beta(bitboard* b, int depth, int alpha, int beta, int ply)
 	//															//
 	//**********************************************************//
 
+	// check if we are in check or not
+	bool side_to_move = b->side_to_move;
+	uint8_t king_pos = b->king_positions[side_to_move];
+	bool is_check = b->is_square_attacked(king_pos, !side_to_move);
+
+	// if we are in check, extend search by 1 ply
 	depth += is_check;
 
 	//**********************************************************//
@@ -189,19 +377,21 @@ int search::alpha_beta(bitboard* b, int depth, int alpha, int beta, int ply)
 
 	// check for draw by repetition
 	uint8_t rep_count = 1;
-	for (size_t i = b->game_history.size(); i > 0; i--)
-	{
-		if (b->game_history[i - 1].last_move.move == 0 || b->game_history[i - 1].last_move.get_flags() != bit_move::quiet_move)
+	if (ply != 0) {
+		for (size_t i = b->game_history.size(); i > 0; i--)
 		{
-			break;
-		}
-		if (b->game_history[i - 1].z_hash == b->zobrist_key)
-		{
-			rep_count++;
-		}
-		if (rep_count == 3)
-		{
-			return 0;
+			if (b->game_history[i - 1].last_move.move == 0 || b->game_history[i - 1].last_move.get_flags() != bit_move::quiet_move)
+			{
+				break;
+			}
+			if (b->game_history[i - 1].z_hash == b->zobrist_key)
+			{
+				rep_count++;
+			}
+			if (rep_count == 3)
+			{
+				return 0;
+			}
 		}
 	}
 
@@ -212,8 +402,11 @@ int search::alpha_beta(bitboard* b, int depth, int alpha, int beta, int ply)
 	}
 
 	bool pv = (beta - alpha) != 1;
+	bool zero_window = !pv;
+	if (pv) {
+		SELDEPTH = std::max(ply, SELDEPTH);
+	}
 	uint8_t num_legal = 0;
-	// uint8_t num_quiet = 0;
 	uint8_t flag = tt_entry::UPPER_BOUND;
 	int best_score = -MATE + ply;
 
@@ -224,7 +417,7 @@ int search::alpha_beta(bitboard* b, int depth, int alpha, int beta, int ply)
 
 	int hash_score = tt.probe(b->zobrist_key, depth, ply, alpha, beta, &hash_move);
 
-	if (hash_score != tt_entry::VAL_UNKNOWN && ply != 0 && !pv)
+	if (hash_score != tt_entry::VAL_UNKNOWN && ply != 0 && zero_window)
 	{
 		return hash_score;
 	}
@@ -283,10 +476,11 @@ int search::alpha_beta(bitboard* b, int depth, int alpha, int beta, int ply)
 	//															//
 	//**********************************************************//
 
-	if (depth > 2 && !is_check && !has_only_pawns && !pv && !post_null_move && static_eval >= beta)
+	if (depth > 2 && !is_check && !has_only_pawns && zero_window && !post_null_move && static_eval >= beta)
 	{
 		b->make_null_move();
 		int R = 2;
+		// increase reduction for null move pruning if remaining search-depth is high
 		if (depth > 6)
 		{
 			R++;
@@ -295,8 +489,8 @@ int search::alpha_beta(bitboard* b, int depth, int alpha, int beta, int ply)
 		{
 			R++;
 		}
-
-		int null_score = -quiescence(b, -beta, -beta + 1, ply + 1);
+		// run a zero window search with reduced depth
+		int null_score = -alpha_beta(b, depth - R - 1, -beta, -beta + 1, ply + 1);
 		b->unmake_null_move();
 		if (null_score >= beta)
 		{
@@ -332,14 +526,13 @@ non_generated_moves:
 			if (score > alpha)
 			{
 				alpha = score;
-				// update PV
+				update_PV(&hash_move, ply);
 			}
 			if (score > best_score)
 			{
 				best_score = score;
 				flag = tt_entry::EXACT;
 				best_move = hash_move;
-				update_PV(&hash_move, ply);
 			}
 		}
 	}
@@ -407,13 +600,18 @@ generate:
 			int score;
 			if (flag == tt_entry::EXACT)
 			{
+				// search at reduced depth with null window
 				score = -alpha_beta(b, depth - 1 - LMR, -alpha - 1, -alpha, ply + 1);
+				// if search fails
 				if (score > alpha && score < beta)
 				{
+					// research at full depth with null window
 					score = -alpha_beta(b, depth - 1, -alpha - 1, -alpha, ply + 1);
 				}
+				// if search fails again
 				if (score > alpha && score < beta)
-				{ // research at full depth
+				{
+					// research at full depth with normal window
 					score = -alpha_beta(b, depth - 1, -beta, -alpha, ply + 1);
 				}
 			}
@@ -440,6 +638,7 @@ generate:
 				best_score = score;
 				best_move = m;
 				flag = tt_entry::EXACT;
+
 			}
 			if (score > alpha)
 			{
@@ -467,148 +666,30 @@ generate:
 	return best_score;
 }
 
-int search::search_iterative_deepening(bitboard* b, int depth, bool quiet)
-{
-	stop_now = false;
-	int prev_score = 0;
-	bit_move best_move = bit_move();
-	int i;
-	int score = 0;
-	int TOTAL_NODES = 0;
-	//**********************************************************//
-	// 															//
-	// iterate from depth 1 to n								//
-	// 															//
-	//**********************************************************//
-
-	STARTTIME = std::chrono::high_resolution_clock::now();
-
-	for (i = 1; i <= depth; i++)
-	{
-		NODES_SEARCHED = 0;
-		QNODES_SEARCHED = 0;
-		score = 0;
-		int num_fails = 0;
-
-		// if depth == 1, search without aspiration windows
-
-		if (i == 1)
-		{
-			score = alpha_beta(b, i, -MATE, MATE, 0);
-			prev_score = score;
-		}
-		else
-		{
-			// set aspiration window
-			int prev_alpha = prev_score - 16;
-			int prev_beta = prev_score + 16;
-
-			// search with aspiration window
-			score = alpha_beta(b, i, prev_alpha, prev_beta, 0);
-
-			num_fails = 0;
-
-			// as long as the score is outside the window, reset PV + bestmove and search again
-			while ((score <= prev_alpha || score >= prev_beta) && !stop_now)
-			{
-				for (int x = 0; x < MAX_PV_SIZE; x++)
-				{
-					for (int y = 0; y < MAX_PV_SIZE; y++)
-					{
-						PV[x][y].move = 0;
-					}
-				}
-				// if the score is too low, decrease alpha
-				prev_alpha = (score <= prev_alpha) ? prev_alpha - (16 << num_fails) : prev_alpha;
-				// if the score is too high, increase beta
-				prev_beta = (score >= prev_beta) ? prev_beta + (16 << num_fails) : prev_beta;
-				// research
-				score = alpha_beta(b, i, prev_alpha, prev_beta, 0);
-				num_fails++;
-			}
-			if (!stop_now)
-			{
-				prev_score = score;
-			}
-		}
-
-		if (stop_now)
-		{
-			// if we stopped the search, abort, since incomplete search is invalid
-			if (!quiet)
-				std::cout << "info nodes " << NODES_SEARCHED << std::endl;
-			break;
-		}
-		else
-		{
-			// if we didn't stop the search, print the info
-			if (!quiet) {
-				std::cout << "info depth " << i << " seldepth " << i << " multipv 1";
-
-				if (std::abs(score) < MATE - MAX_PV_SIZE - 1 && !stop_now)
-				{
-					std::cout << " score cp " << ((stop_now) ? prev_score : score) << " ";
-				}
-				else
-				{
-					std::cout << " score mate " << utility::sgn(score) * (MATE - std::abs(score) + 1) / 2 << " ";
-				}
-
-				best_move = PV[0][0];
-				std::cout << "pv ";
-				int j;
-				int dist_to_mate = std::abs(MATE - score);
-				bool root_side = b->side_to_move;
-				for (j = 0; j < std::min(i, dist_to_mate); j++)
-				{
-					bit_move m = PV[0][j];
-					if (m.move == 0)
-					{
-						break;
-					}
-					if (!b->is_legal<false>(&m) && j < i - 1)
-					{
-						break;
-					}
-
-					tt.set(b->zobrist_key, i - j, j, (b->side_to_move == root_side) ? score : -score, tt_entry::EXACT, m);
-					b->make_move(&m);
-					std::cout << bit_move::to_string(search::PV[0][j]) << " ";
-				}
-				for (; j > 0; j--)
-				{
-					b->unmake_move();
-				}
-
-				std::cout << "nodes " << NODES_SEARCHED << " qnodes " << QNODES_SEARCHED << " ";
-
-				int duration_ms = (int)std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - STARTTIME).count();
-				// compute nps
-				int nps = (duration_ms > 0) ? (int)((double)NODES_SEARCHED / ((double)duration_ms / 1000.0)) : 0;
-				std::cout << "nps " << nps << " num_fails " << num_fails << std::endl;
-			}
-			for (int x = 0; x < MAX_PV_SIZE; x++)
-			{
-				for (int y = 0; y < MAX_PV_SIZE; y++)
-				{
-					PV[x][y].move = 0;
-				}
-			}
-
-			TOTAL_NODES += NODES_SEARCHED;
-		}
-	}
-	if (!quiet)
-		std::cout << "bestmove " << bit_move::to_string(best_move) << std::endl;
-	return TOTAL_NODES;
-}
-
+/**
+ * \brief Updates the PV table.
+ *
+ * The PV table is updated by copying the PV from the previous iteration
+ * and adding the new move to the beginning of the PV.
+ *
+ * \param m The move to add to the PV
+ * \param ply The current ply
+ */
 void search::update_PV(bit_move* m, int ply)
 {
 	PV[ply][0] = *m;
-	for (int i = 0; i < MAX_PV_SIZE - 1; i++)
+	for (int i = 0; i < std::min(PV_SIZE[ply + 1], MAX_PV_SIZE - 1); i++)
 	{
 		PV[ply][i + 1] = PV[ply + 1][i];
+	}
+
+	PV_SIZE[ply] = std::min(PV_SIZE[ply + 1] + 1, MAX_PV_SIZE);
+}
+
+void search::clear_PV() {
+	for (int i = 0; i < MAX_PV_SIZE; i++)
+	{
+		PV_SIZE[i] = 0;
 	}
 }
 
@@ -656,6 +737,23 @@ void search::fetch_next_move(movelist* m_l, scorelist* s_l, int index)
 		m_l->moves[index] = max_move;
 		s_l->scores[original_score_index] = s_l->scores[index];
 		s_l->scores[index] = max_score;
+	}
+}
+
+void search::clear_killers() {
+	for (int i = 0; i < MAX_PLY; i++)
+	{
+		killers[0][i] = bit_move();
+		killers[1][i] = bit_move();
+	}
+}
+
+void search::clear_history() {
+	for (int i = 0; i < 64; i++) {
+		for (int j = 0; j < 64; j++) {
+			history[WHITE][i][j] = 0;
+			history[BLACK][i][j] = 0;
+		}
 	}
 }
 

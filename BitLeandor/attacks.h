@@ -16,6 +16,11 @@ public:
 	static uint64_t squares_between[64][64];
 	static uint64_t bishop_attacks[64][512];
 	static uint64_t rook_attacks[64][4096];
+
+	static uint64_t diagonal_masks[64];
+	static uint64_t horizontal_vertical_masks[64];
+
+	static void init_directional_masks();
 	static void init_squares_between();
 	static void init_attack_tables();
 	static void init_knight_attacks();

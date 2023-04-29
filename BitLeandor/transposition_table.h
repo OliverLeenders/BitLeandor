@@ -10,6 +10,7 @@ public:
 	transposition_table();
 	int size = 16777216;
 	static void init_keys();
+	void clear();
 	tt_entry* table = new tt_entry[16777216];
 	static uint64_t piece_keys[12][64];
 	static uint64_t castling_keys[4];

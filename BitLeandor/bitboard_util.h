@@ -54,6 +54,8 @@ const uint64_t not_ab_file = 18229723555195321596ULL;
 const uint64_t first_rank = 255ULL;
 const uint64_t second_rank = 65280ULL;
 const uint64_t third_rank = 16711680ULL;
+const uint64_t fourth_rank = 4278190080ULL;
+const uint64_t fifth_rank = 1095216660480ULL;
 const uint64_t sixth_rank = 280375465082880ULL;
 const uint64_t seventh_rank = 71776119061217280ULL;
 const uint64_t eighth_rank = 18374686479671623680ULL;
@@ -66,6 +68,32 @@ const uint64_t e_file = 1157442765409226768ULL;
 const uint64_t f_file = 2314885530818453536ULL;
 const uint64_t g_file = 4629771061636907072ULL;
 const uint64_t h_file = 9259542123273814144ULL;
+
+
+
+const uint64_t file_masks[NUM_SQUARES] = {
+	a_file, b_file, c_file, d_file, e_file, f_file, g_file, h_file,
+	a_file, b_file, c_file, d_file, e_file, f_file, g_file, h_file,
+	a_file, b_file, c_file, d_file, e_file, f_file, g_file, h_file,
+	a_file, b_file, c_file, d_file, e_file, f_file, g_file, h_file,
+	a_file, b_file, c_file, d_file, e_file, f_file, g_file, h_file,
+	a_file, b_file, c_file, d_file, e_file, f_file, g_file, h_file,
+	a_file, b_file, c_file, d_file, e_file, f_file, g_file, h_file,
+	a_file, b_file, c_file, d_file, e_file, f_file, g_file, h_file
+};
+
+const uint64_t rank_masks[NUM_SQUARES] = {
+	first_rank,	   first_rank,	  first_rank,	 first_rank,	first_rank,	   first_rank,	  first_rank,	 first_rank,
+	second_rank,   second_rank,   second_rank,   second_rank,   second_rank,   second_rank,   second_rank,   second_rank,
+	third_rank,    third_rank,    third_rank,    third_rank,    third_rank,    third_rank,    third_rank,    third_rank,
+	fourth_rank,   fourth_rank,   fourth_rank,   fourth_rank,   fourth_rank,   fourth_rank,   fourth_rank,   fourth_rank,
+	fifth_rank,    fifth_rank,    fifth_rank,    fifth_rank,    fifth_rank,    fifth_rank,    fifth_rank,    fifth_rank,
+	sixth_rank,    sixth_rank,    sixth_rank,    sixth_rank,    sixth_rank,    sixth_rank,    sixth_rank,    sixth_rank,
+	seventh_rank,  seventh_rank,  seventh_rank,  seventh_rank,  seventh_rank,  seventh_rank,  seventh_rank,  seventh_rank,
+	eighth_rank,   eighth_rank,   eighth_rank,   eighth_rank,   eighth_rank,   eighth_rank,   eighth_rank,   eighth_rank
+};
+
+
 
 const uint64_t files[8] = {
    a_file, b_file, c_file, d_file, e_file, f_file, g_file, h_file
@@ -93,4 +121,8 @@ Getting the index of the least significant set bit
 
 [[nodiscard]] inline uint8_t PopCount64(uint64_t bb) {
 	return (uint8_t)__popcnt64(bb);
+}
+
+[[nodiscard]] inline uint8_t PopCount8(uint8_t f) {
+	return (uint8_t)__popcnt(f);
 }

@@ -14,6 +14,15 @@ void pawn_transposition_table::set_entry(uint64_t key, int eg_score, int mg_scor
     int index = key % size;
     table[index].eg_score = eg_score;
     table[index].mg_score = mg_score;
+    table[index].key = key;
+}
+
+void pawn_transposition_table::clear() {
+    for (int i = 0; i < this->size; i++) {
+		table[i].key = 0;
+        table[i].eg_score = transposition_table::VAL_UNKNOWN;
+        table[i].mg_score = transposition_table::VAL_UNKNOWN;
+	}
 }
 
 int pawn_transposition_table::probe(uint64_t key, int phase) {
@@ -24,4 +33,28 @@ int pawn_transposition_table::probe(uint64_t key, int phase) {
     else {
         return transposition_table::VAL_UNKNOWN;
     }
+}
+
+int pawn_transposition_table::probe_mg(uint64_t key)
+{
+    int index = key % size;
+    pawn_tt_entry entry = table[index];
+    if (key == entry.key) {
+		return entry.mg_score;
+	}
+    else {
+		return transposition_table::VAL_UNKNOWN;
+	}
+}
+
+int pawn_transposition_table::probe_eg(uint64_t key)
+{
+    int index = key % size;
+    pawn_tt_entry entry = table[index];
+    if (key == entry.key) {
+        return entry.eg_score;
+    }
+    else {
+		return transposition_table::VAL_UNKNOWN;
+	}
 }

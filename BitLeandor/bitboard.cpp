@@ -237,6 +237,19 @@ void bitboard::pos_from_fen(std::string fen) {
 	return;
 }
 
+void bitboard::pos_from_epd_line(std::string epd_l)
+{
+	std::vector<std::string> epd_split;
+	utility::split_string(&epd_split, epd_l);
+
+	std::string fen_string;
+	for (int i = 0; i < 4; i++) {
+		fen_string += epd_split[i] + " ";
+	}
+	fen_string += "0 1";
+	this->pos_from_fen(fen_string);
+}
+
 std::string bitboard::pos_to_fen()
 {
 	std::string fen = "";
@@ -355,7 +368,7 @@ int bitboard::piece_to_char(uint8_t piece)
 void bitboard::make_null_move() {
 	bit_move nm = {};
 
-	this->game_history.emplace_back(zobrist_key, ep_target_square, nm, fifty_move_rule_counter, castling_rights);
+	this->game_history.emplace_back(zobrist_key, pawn_hash_key, ep_target_square, nm, fifty_move_rule_counter, castling_rights);
 	this->side_to_move = !this->side_to_move;
 	this->zobrist_key ^= transposition_table::side_key;
 	this->fifty_move_rule_counter = 0;
@@ -372,6 +385,7 @@ void bitboard::unmake_null_move() {
 	this->side_to_move = !this->side_to_move;
 	this->fifty_move_rule_counter = bs.fifty_move_counter;
 	this->zobrist_key = bs.z_hash;
+	this->pawn_hash_key = bs.p_hash;
 	this->ep_target_square = bs.en_passant_target_square;
 }
 
@@ -386,21 +400,21 @@ void bitboard::unmake_null_move() {
  */
 bool bitboard::is_square_attacked(int square, bool side_to_move) {
 	if (attacks::pawn_attacks[!side_to_move][square] & bbs[PAWN][side_to_move]) {
-		return 1;
+		return true;
 	}
 	if (attacks::knight_attacks[square] & bbs[KNIGHT][side_to_move]) {
-		return 1;
+		return true;
 	}
 	if (attacks::get_bishop_attacks(square, occupancy[0] | occupancy[1]) & (bbs[BISHOP][side_to_move] | bbs[QUEEN][side_to_move])) {
-		return 1;
+		return true;
 	}
 	if (attacks::get_rook_attacks(square, occupancy[0] | occupancy[1]) & (bbs[ROOK][side_to_move] | bbs[QUEEN][side_to_move])) {
-		return 1;
+		return true;
 	}
 	if (attacks::king_attacks[square] & bbs[KING][side_to_move]) {
-		return 1;
+		return true;
 	}
-	return 0;
+	return false;
 }
 
 // b2c3 a6e2 e1e2 a7b6 e2e3 a1a1 g2f3 e3e2
@@ -511,7 +525,7 @@ void bitboard::print_board()
 void bitboard::make_move(bit_move* m)
 {
 	// save the current game state in the game history vector
-	this->game_history.emplace_back(this->zobrist_key, this->ep_target_square, *m, this->fifty_move_rule_counter, this->castling_rights);
+	this->game_history.emplace_back(this->zobrist_key, this->pawn_hash_key, this->ep_target_square, *m, this->fifty_move_rule_counter, this->castling_rights);
 	// extract move details
 	const uint8_t origin = m->get_origin();
 	const uint8_t target = m->get_target();
@@ -655,6 +669,7 @@ void bitboard::unmake_move()
 	this->fifty_move_rule_counter = prev_board_state.fifty_move_counter;
 	this->ep_target_square = prev_board_state.en_passant_target_square;
 	this->zobrist_key = prev_board_state.z_hash;
+	this->pawn_hash_key = prev_board_state.p_hash;
 	this->castling_rights = prev_board_state.castling_rights;
 
 	bit_move prev_move = prev_board_state.last_move;
@@ -729,6 +744,9 @@ void bitboard::place_piece(uint8_t piece, uint8_t target)
 	// update the zobrist hash key => important
 	if (update_zobrist) {
 		zobrist_key ^= transposition_table::piece_keys[piece][target];
+		if (type == PAWN || type == KING) {
+			pawn_hash_key ^= transposition_table::piece_keys[piece][target];
+		}
 	}
 }
 
@@ -754,6 +772,9 @@ void bitboard::unset_piece(uint8_t target)
 	// update the zobrist hash key
 	if (update_zobrist) {
 		zobrist_key ^= transposition_table::piece_keys[piece][target];
+		if (type == PAWN || type == KING) {
+			pawn_hash_key ^= transposition_table::piece_keys[piece][target];
+		}
 	}
 }
 

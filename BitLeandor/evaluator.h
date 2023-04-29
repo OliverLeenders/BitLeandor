@@ -5,51 +5,68 @@
 #include "pawn_tt_entry.h"
 #include "pawn_transposition_table.h"
 
+enum {
+	MIDGAME = 0,
+	ENDGAME = 1,
+	NUM_PHASES = 2
+};
+
 class evaluator
 {
 public:
 	static int eval(bitboard* b);
-	static int eval_pawn_structure(bitboard* b, uint8_t phase);
+	static void eval_pawn_structure(bitboard* b, uint8_t phase, int* mg_score, int* eg_score);
+	static bool is_draw(bitboard* b);
+
+	static int tuner_eval(bitboard* b);
 	static void init_tables();
 	
-	enum {
-		MIDGAME = 0,
-		ENDGAME = 1
-	};
-	const static int piece_values[2][12];
+	const static int piece_values[NUM_PHASES][12];
+	static int tuner_piece_values[NUM_PHASES][6];
 	const static uint8_t game_phase_values[6];
-	const static uint8_t mobility_divisors[6];
-	
+	const static uint8_t game_phase_sum;
+	const static float mobility_factors[6];
+
 	// distance arrays
-	static int manhattan_distance[64][64];
+	static int manhattan_distance[NUM_SQUARES][NUM_SQUARES];
 	const static int center_manhattan_distance[64];
 	
 	// pawn spans
-	static uint64_t front_spans[2][64];
-	static uint64_t attack_front_spans[2][64];
+	static uint64_t front_spans[NUM_COLORS][NUM_SQUARES];
+	static uint64_t attack_front_spans[NUM_COLORS][NUM_SQUARES];
 	
 	// piece square tables (PST)
-	const static int pawn_pst_mg[64];
-	const static int pawn_pst_eg[64];
-	const static int knight_pst_mg[64];
-	const static int knight_pst_eg[64];
-	const static int bishop_pst_mg[64];
-	const static int bishop_pst_eg[64];
-	const static int rook_pst_mg[64];
-	const static int rook_pst_eg[64];
-	const static int queen_pst_mg[64];
-	const static int queen_pst_eg[64];
-	const static int king_pst_mg[64];
-	const static int king_pst_eg[64];
-	const static int passed_pawn_bonus_pst_mg[64];
-	const static int passed_pawn_bonus_pst_eg[64];
+	const static int pawn_pst_mg[NUM_SQUARES];
+	const static int pawn_pst_eg[NUM_SQUARES];
+	const static int knight_pst_mg[NUM_SQUARES];
+	const static int knight_pst_eg[NUM_SQUARES];
+	const static int bishop_pst_mg[NUM_SQUARES];
+	const static int bishop_pst_eg[NUM_SQUARES];
+	const static int rook_pst_mg[NUM_SQUARES];
+	const static int rook_pst_eg[NUM_SQUARES]; 
+	const static int queen_pst_mg[NUM_SQUARES];
+	const static int queen_pst_eg[NUM_SQUARES];
+	const static int king_pst_mg[NUM_SQUARES];
+	const static int king_pst_eg[NUM_SQUARES];
+	const static int passed_pawn_bonus_pst_mg[NUM_SQUARES];
+	const static int passed_pawn_bonus_pst_eg[NUM_SQUARES];
+
+	static int pawn_shield_penalty_ks;
+	static int pawn_shield_penalty_qs;
 	
-	static int pp_bonus[2][2][64]; // [color][phase][square]
-	const static int double_pawn_penalty[2][2][8]; // [color][phase][file]
+	static int pp_bonus[2][NUM_PHASES][NUM_SQUARES]; // [color][phase][square]
+	static int double_pawn_penalty[NUM_COLORS][NUM_PHASES][8]; // [color][phase][file]
+	static int tuner_double_pawn_penalty[NUM_PHASES][8]; // [color][phase][file]
 
 	// master PST
-	static int piece_square_tables[2][12][64];
+	static int piece_square_tables[NUM_PHASES][12][NUM_SQUARES];
 	
 	// pawn structure transposition table
 	static pawn_transposition_table pawn_tt;
+
+	static const uint64_t pawn_shields[NUM_COLORS][NUM_SIDES];
+	static const uint64_t safe_king_positions[NUM_COLORS][NUM_SIDES];
+	static int pawn_tt_hits;
+	static int pawn_tt_misses;
+
 };

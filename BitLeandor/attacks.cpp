@@ -10,6 +10,8 @@ uint64_t attacks::bishop_magics[64] = { 0ULL };
 uint64_t attacks::rook_attacks[64][4096] = { {0ULL} };
 uint64_t attacks::bishop_attacks[64][512] = { {0ULL} };
 uint64_t attacks::squares_between[64][64] = { {0ULL} };
+uint64_t attacks::diagonal_masks[64] = { 0ULL };
+uint64_t attacks::horizontal_vertical_masks[64] = { 0ULL };
 
 void attacks::init_squares_between()
 {
@@ -60,6 +62,13 @@ void attacks::init_attack_tables() {
 	init_bishop_attack_masks();
 	init_squares_between();
 	return;
+}
+
+void attacks::init_directional_masks() {
+	for (int i = 0; i < 64; i++) {
+		diagonal_masks[i] = get_bishop_attacks(i, 0ULL);
+		horizontal_vertical_masks[i] = get_rook_attacks(i, 0ULL);
+	}
 }
 
 void attacks::init_king_attacks() {

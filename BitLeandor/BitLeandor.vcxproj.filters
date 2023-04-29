@@ -72,6 +72,9 @@
     <ClInclude Include="pawn_tt_entry.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="tuner.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="attacks.cpp">
@@ -128,6 +131,9 @@
     <ClCompile Include="pawn_tt_entry.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
+    <ClCompile Include="tuner.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="fens_1000.txt">
@@ -136,5 +142,17 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md" />
+    <None Include="o-deville.epd">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="o-deville-quiet.epd">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="tune-quiet.epd">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="quiet-labeled.epd">
+      <Filter>Ressourcendateien</Filter>
+    </None>
   </ItemGroup>
 </Project>

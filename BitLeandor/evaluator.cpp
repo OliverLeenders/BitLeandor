@@ -1,8 +1,32 @@
 #include "evaluator.h"
 
-const int evaluator::piece_values[2][12] = {
-	{100, 300, 330, 480, 900, 0, -100, -300, -330, -480, -900, 0},
-	{120, 310, 340, 550, 1000, 0, -120, -310, -340, -550, -1000, 0} };
+/*
+Tuning finished with error: 0.0679752
+Piece values:
+117, 391, 435, 652, 1288, 0,
+108, 396, 418, 634, 1258, 0,
+Game Phase Values:
+0, 41, 40, 60, 101, 0,
+Pawn shield penalty (kingside): 13
+Pawn shield penalty (queenside): 28
+Double pawn penalty:
+29, 22, 31, 10, 6, 35, 48, 24,
+67, 35, 53, 16, 21, 48, 31, 49,
+*/
+
+const int evaluator::piece_values[NUM_PHASES][12] = {
+	{117, 391, 435, 652, 1288, 0, -119, -391, -435, -652, -1288, 0},
+	{108, 396, 418, 634, 1258, 0, -110, -396, -418, -634, -1258, 0}
+};
+
+int evaluator::tuner_piece_values[NUM_PHASES][6] = {
+	{117, 391, 435, 652, 1288, 0},
+	{108, 396, 418, 634, 1258, 0}
+};
+
+
+const uint64_t evaluator::pawn_shields[NUM_COLORS][2] = { { 57344ULL , 1792ULL }, { 63050394783186944ULL, 1970324836974592ULL} };
+const uint64_t evaluator::safe_king_positions[NUM_COLORS][2] = { { 224ULL, 7ULL}, { 16140901064495857664ULL,  504403158265495552ULL} };
 
 const uint8_t evaluator::game_phase_values[6] = {
 	0,
@@ -12,27 +36,33 @@ const uint8_t evaluator::game_phase_values[6] = {
 	10, // 20
 	0 };
 // total : 16 + 16 + 24 + 20 = 76
+const uint8_t evaluator::game_phase_sum = 76;
 
-const uint8_t evaluator::mobility_divisors[6] = {
-	1, 
-	1,
+const float evaluator::mobility_factors[6] = {
+	1.0,
+	1.0,
 	// bishop
-	2,
+	1.0,
 	// rook
-	4,
+	0.5,
 	// queen
-	6,
+	0.5,
 	1 };
 
-int evaluator::piece_square_tables[2][12][64] = { {{0}} };
-uint64_t evaluator::front_spans[2][64] = { {0} };
-uint64_t evaluator::attack_front_spans[2][64] = { {0} };
+int evaluator::piece_square_tables[NUM_COLORS][12][NUM_SQUARES] = { {{0}} };
+uint64_t evaluator::front_spans[NUM_COLORS][NUM_SQUARES] = { {0} };
+uint64_t evaluator::attack_front_spans[NUM_COLORS][NUM_SQUARES] = { {0} };
 int evaluator::pp_bonus[2][2][64] = { {{0}} }; // [color][phase][square]
+int evaluator::pawn_tt_hits = 0;
+int evaluator::pawn_tt_misses = 0;
 
-pawn_transposition_table evaluator::pawn_tt = pawn_transposition_table(4096 * 2);
-int evaluator::manhattan_distance[64][64] = { {0} };
+int evaluator::pawn_shield_penalty_ks = 13;
+int evaluator::pawn_shield_penalty_qs = 28;
 
-const int evaluator::center_manhattan_distance[64] = {
+pawn_transposition_table evaluator::pawn_tt = pawn_transposition_table(4096 << 2);
+int evaluator::manhattan_distance[NUM_SQUARES][NUM_SQUARES] = { {0} };
+
+const int evaluator::center_manhattan_distance[NUM_SQUARES] = {
 	6, 5, 4, 3, 3, 4, 5, 6,
 	5, 4, 3, 2, 2, 3, 4, 5,
 	4, 3, 2, 1, 1, 2, 3, 4,
@@ -53,47 +83,13 @@ int evaluator::eval(bitboard* b)
 	uint8_t index = 0;
 	uint64_t occ = b->occupancy[2];
 	uint8_t piece = EMPTY;
-	uint8_t wkp = BitScanForward64(b->bbs[KING][WHITE]);
-	uint8_t bkp = BitScanForward64(b->bbs[KING][BLACK]);
 
-	if (b->occupancy[2] == (b->bbs[KING][WHITE] | b->bbs[KING][BLACK]))
+
+	if (is_draw(b))
 	{
 		return 0;
 	}
-	//else if ((b->bbs[PAWN][WHITE] | b->bbs[PAWN][BLACK]) == 0ULL)
-	//{
-
-	//	//**************************************************************//
-	//	//																//
-	//	//  return 0 if endgame is drawn								//
-	//	//																//
-	//	//**************************************************************//
-
-	//	// check KR-KR
-	//	if (b->occupancy[2] == (b->bbs[KING][WHITE] | b->bbs[KING][BLACK] | b->bbs[ROOK][WHITE] | b->bbs[ROOK][BLACK]) && PopCount64(b->bbs[ROOK][WHITE]) == 1 && PopCount64(b->bbs[ROOK][BLACK]) == 1)
-	//	{
-	//		return 0;
-	//	}
-	//	// check KNN-K
-	//	if (b->occupancy[2] == (b->bbs[KING][WHITE] | b->bbs[KING][BLACK] | b->bbs[KNIGHT][WHITE] | b->bbs[KNIGHT][BLACK]) && ((PopCount64(b->bbs[KNIGHT][WHITE]) <= 2 && PopCount64(b->bbs[KNIGHT][BLACK]) == 0) ||
-	//		(PopCount64(b->bbs[KNIGHT][WHITE]) == 0 && PopCount64(b->bbs[KNIGHT][BLACK]) <= 2)))
-	//	{
-	//		return 0;
-	//	}
-	//	// check KN-KB
-	//	if (b->occupancy[2] == (b->bbs[KING][WHITE] | b->bbs[KING][BLACK] | b->bbs[KNIGHT][WHITE] | b->bbs[KNIGHT][BLACK] | b->bbs[BISHOP][WHITE] | b->bbs[BISHOP][BLACK]) && ((PopCount64(b->bbs[KNIGHT][WHITE]) == 1 && PopCount64(b->bbs[KNIGHT][BLACK]) == 0 && PopCount64(b->bbs[BISHOP][BLACK]) == 1 && PopCount64(b->bbs[BISHOP][WHITE]) == 0) ||
-	//		(PopCount64(b->bbs[KNIGHT][WHITE]) == 0 && PopCount64(b->bbs[KNIGHT][BLACK]) == 1 && PopCount64(b->bbs[BISHOP][BLACK]) == 0 && PopCount64(b->bbs[BISHOP][WHITE]) == 1)))
-	//	{
-	//		return 0;
-	//	}
-	//	// check KB-K
-	//	if (b->occupancy[2] == (b->bbs[KING][WHITE] | b->bbs[KING][BLACK] | b->bbs[BISHOP][WHITE] | b->bbs[BISHOP][BLACK]) && ((PopCount64(b->bbs[BISHOP][WHITE]) == 1 && PopCount64(b->bbs[BISHOP][BLACK]) == 0) ||
-	//		(PopCount64(b->bbs[BISHOP][WHITE]) == 0 && PopCount64(b->bbs[BISHOP][BLACK]) == 1)))
-	//	{
-	//		return 0;
-	//	}
-	//}
-
+	
 	//******************************************************************//
 	// 																	//
 	// evaluate material + piece square tables							//
@@ -110,90 +106,9 @@ int evaluator::eval(bitboard* b)
 		occ &= occ - 1;
 	}
 
-	//******************************************************************//
-	// 																	//
-	// evaluate passed pawns											//
-	//																	//
-	//******************************************************************//
-
-
-
-	//******************************************************************//
-	// 																	//
-	// evaluate mobility [needs to be tweaked]							//
-	//																	//
-	//******************************************************************//
-
-	// uint64_t w_queens = b->bbs[QUEEN][WHITE];
-	// while (w_queens != 0ULL)
-	// {
-	// 	index = BitScanForward64(w_queens);
-	// 	midgame_score += (int)(PopCount64(attacks::get_rook_attacks(index, occ) | attacks::get_bishop_attacks(index, occ))) / mobility_divisors[QUEEN];
-	// 	endgame_score += (int)(PopCount64(attacks::get_rook_attacks(index, occ) | attacks::get_bishop_attacks(index, occ))) / mobility_divisors[QUEEN];
-	// 	w_queens &= w_queens - 1;
-	// }
-
-	// uint64_t b_queens = b->bbs[QUEEN][BLACK];
-	// while (b_queens != 0ULL)
-	// {
-	// 	index = BitScanForward64(b_queens);
-	// 	midgame_score -= (int)(PopCount64(attacks::get_rook_attacks(index, occ) | attacks::get_bishop_attacks(index, occ))) / mobility_divisors[QUEEN];
-	// 	endgame_score -= (int)(PopCount64(attacks::get_rook_attacks(index, occ) | attacks::get_bishop_attacks(index, occ))) / mobility_divisors[QUEEN];
-	// 	b_queens &= b_queens - 1;
-	// }
-
-	// // evaluate white rooks
-	// uint64_t w_rooks = b->bbs[ROOK][WHITE];
-	// while (w_rooks != 0ULL)
-	// {
-	// 	index = BitScanForward64(w_rooks);
-	// 	midgame_score += (int)PopCount64(attacks::get_rook_attacks(index, occ)) / mobility_divisors[ROOK];
-	// 	endgame_score += (int)PopCount64(attacks::get_rook_attacks(index, occ)) / mobility_divisors[ROOK];
-	// 	w_rooks &= w_rooks - 1;
-	// }
-
-	// // evaluate black rook mobility
-	// uint64_t b_rooks = b->bbs[ROOK][BLACK];
-	// while (b_rooks != 0ULL)
-	// {
-	// 	index = BitScanForward64(b_rooks);
-	// 	midgame_score -= (int)PopCount64(attacks::get_rook_attacks(index, occ)) / mobility_divisors[ROOK];
-	// 	endgame_score -= (int)PopCount64(attacks::get_rook_attacks(index, occ)) / mobility_divisors[ROOK];
-	// 	b_rooks &= b_rooks - 1;
-	// }
-
-	// // evaluate white bishop mobility
-	// uint64_t w_bishops = b->bbs[BISHOP][WHITE];
-	// while (w_bishops != 0ULL)
-	// {
-	// 	index = BitScanForward64(w_bishops);
-	// 	midgame_score += (int)PopCount64(attacks::get_bishop_attacks(index, occ)) / mobility_divisors[BISHOP];
-	// 	endgame_score += (int)PopCount64(attacks::get_bishop_attacks(index, occ)) / mobility_divisors[BISHOP];
-	// 	w_bishops &= w_bishops - 1;
-	// }
-
-	// // evaluate black bishop mobility
-	// uint64_t b_bishops = b->bbs[BISHOP][BLACK];
-	// while (b_bishops != 0ULL)
-	// {
-	// 	index = BitScanForward64(b_bishops);
-	// 	midgame_score -= (int)PopCount64(attacks::get_bishop_attacks(index, occ)) / mobility_divisors[BISHOP];
-	// 	endgame_score -= (int)PopCount64(attacks::get_bishop_attacks(index, occ)) / mobility_divisors[BISHOP];
-	// 	b_bishops &= b_bishops - 1;
-	// }
-
-
-	//******************************************************************//
-	// 																	//
-	// special scoring for pawnless endgame	(found on CPW)				//
-	//																	//
-	//******************************************************************//
-
-	int late_eg_score = 0;
-	/*if (b->bbs[PAWN][WHITE] == 0ULL && b->bbs[PAWN][BLACK] == 0ULL && std::abs(endgame_score) > 250)
-	{
-		late_eg_score = utility::sgn(endgame_score) * (int)(4.7 * center_manhattan_distance[(endgame_score > 0) ? bkp : wkp] + 1.6 * (14 - manhattan_distance[wkp][bkp]));
-	}*/
+	if ((b->bbs[PAWN][WHITE] | b->bbs[PAWN][BLACK])) {
+		eval_pawn_structure(b, phase, &midgame_score, &endgame_score);
+	}
 
 	//******************************************************************//
 	// 																	//
@@ -201,28 +116,33 @@ int evaluator::eval(bitboard* b)
 	//																	//
 	//******************************************************************//
 
-	int score = (midgame_score * phase + (endgame_score + late_eg_score) * (76 - phase)) / 76 /*+ eval_pawn_structure(b, phase)*/;
+	int score = (midgame_score * phase + (endgame_score) * (game_phase_sum - phase)) / game_phase_sum;
 
 	// scores need to be from the perspective of the side to move
 	// => so they are flipped if necessary
 	return (b->side_to_move) ? -score : score;
 }
 
-int evaluator::eval_pawn_structure(bitboard* b, uint8_t phase)
+void evaluator::eval_pawn_structure(bitboard* b, uint8_t phase, int* mg_score, int* eg_score)
 {
-	bit_move m;
-	int hash_score = pawn_tt.probe(b->pawn_hash_key, phase);
+	int hash_score = pawn_tt.probe_mg(b->pawn_hash_key);
 	if (hash_score != transposition_table::VAL_UNKNOWN)
 	{
-		return (b->side_to_move) ? -hash_score : hash_score;
+		(*mg_score) += hash_score;
+		hash_score = pawn_tt.probe_eg(b->pawn_hash_key);
+		(*eg_score) += hash_score;
+		pawn_tt_hits++;
+		return;
 	}
+	pawn_tt_misses++;
+
+	int p_mg_score = 0;
+	int p_eg_score = 0;
 
 	uint64_t w_pawns = b->bbs[PAWN][WHITE];
 	uint64_t b_pawns = b->bbs[PAWN][BLACK];
 
-	int mg_score = 0;
-	int eg_score = 0;
-	bool open_files[2][8] = { {false} };
+	uint8_t pawn_islands[2] = { 0U };
 
 	//******************************************************************//
 	// 																	//
@@ -232,102 +152,224 @@ int evaluator::eval_pawn_structure(bitboard* b, uint8_t phase)
 	// half open at the same time										//
 	// 																	//
 	//******************************************************************//
-
+	uint64_t file;
 	for (int i = 0; i < 8; i++)
 	{
-		uint64_t file = files[i];
-		if ((w_pawns & file) != 0ULL) {// white pawn on file
-			mg_score -= (int)(PopCount64(w_pawns & file) - 1) * double_pawn_penalty[WHITE][MIDGAME][i];
-			eg_score -= (int)(PopCount64(w_pawns & file) - 1) * double_pawn_penalty[WHITE][ENDGAME][i];
+		file = files[i];
+		if ((w_pawns & file) != 0ULL) { // at least one white pawn on file
+			p_mg_score -= ((int)PopCount64(w_pawns & file) - 1) * tuner_double_pawn_penalty[MIDGAME][i];
+			p_eg_score -= ((int)PopCount64(w_pawns & file) - 1) * tuner_double_pawn_penalty[ENDGAME][i];
+			pawn_islands[WHITE] |= 1 << i;
 		}
-		else {
-			open_files[WHITE][i] = true;
-		}
-		if ((b_pawns & file) != 0ULL)
-		{
-			mg_score += (int)(PopCount64(w_pawns & file) - 1) * double_pawn_penalty[BLACK][MIDGAME][i];
-			eg_score += (int)(PopCount64(w_pawns & file) - 1) * double_pawn_penalty[BLACK][ENDGAME][i];
-		}
-		else
-		{
-			open_files[BLACK][i] = true;
+		if ((b_pawns & file) != 0ULL) { // at least one black pawn on file
+			p_mg_score += ((int)PopCount64(b_pawns & file) - 1) * tuner_double_pawn_penalty[MIDGAME][i];
+			p_eg_score += ((int)PopCount64(b_pawns & file) - 1) * tuner_double_pawn_penalty[ENDGAME][i];
+			pawn_islands[BLACK] |= 1 << i;
 		}
 	}
 
-	// initialize front/back array
+	int8_t white_islands = pawn_islands[WHITE];
+	int8_t black_islands = pawn_islands[BLACK];
+
+	white_islands = white_islands & (white_islands >> 1);
+	black_islands = black_islands & (black_islands >> 1);
+
+	white_islands = PopCount8(white_islands) - 1;
+	black_islands = PopCount8(black_islands) - 1;
+
+	// penalty for high number of pawn islands
+	p_mg_score -= (white_islands - black_islands) * 10;
+	p_eg_score -= (white_islands - black_islands) * 15;
+
+	//==================================================================//
+	// 																	//
+	// passed pawn bonus												//
+	//																	//
+	//==================================================================//
 	uint8_t index;
 	while (w_pawns != 0ULL)
 	{
 		index = BitScanForward64(w_pawns);
 		if (((front_spans[WHITE][index] | attack_front_spans[WHITE][index]) & b_pawns) == 0ULL)
 		{
-			mg_score += pp_bonus[WHITE][MIDGAME][index];
-			eg_score += pp_bonus[WHITE][ENDGAME][index];
+			p_mg_score += pp_bonus[WHITE][MIDGAME][index];
+			p_eg_score += pp_bonus[WHITE][ENDGAME][index];
 		}
-		w_pawns &= w_pawns - 1;
+		w_pawns = reset_lsb(w_pawns);
 	}
+	// it is necessary to restore the pawn bitboard for what follows
+	w_pawns = b->bbs[PAWN][WHITE];
 	while (b_pawns != 0ULL)
 	{
 		index = BitScanForward64(b_pawns);
 		if (((front_spans[BLACK][index] | attack_front_spans[BLACK][index]) & w_pawns) == 0ULL)
 		{
-			mg_score += pp_bonus[BLACK][MIDGAME][index];
-			eg_score += pp_bonus[BLACK][ENDGAME][index];
+			p_mg_score += pp_bonus[BLACK][MIDGAME][index];
+			p_eg_score += pp_bonus[BLACK][ENDGAME][index];
 		}
-		b_pawns &= b_pawns - 1;
+		b_pawns &= reset_lsb(b_pawns);
 	}
 
-	//******************************************************************//
+	//==================================================================//
 	// 																	//
-	// king safety (pawn shield)										//
+	// king safety (pawn shields)										//
 	//																	//
-	//******************************************************************//
+	//==================================================================//
+
+	// if white king is on one of the safe squares on the kingside
+	if (b->bbs[KING][WHITE] & safe_king_positions[WHITE][KINGSIDE]) {
+		uint64_t pawn_shield = pawn_shields[WHITE][KINGSIDE] & b->bbs[PAWN][WHITE];
+		p_mg_score -= (3 - PopCount64(pawn_shield)) * pawn_shield_penalty_ks;
+	}
+
+	// if white king is on one of the safe squares on the queenside
+	if (b->bbs[KING][WHITE] & safe_king_positions[WHITE][QUEENSIDE]) {
+		uint64_t pawn_shield = pawn_shields[WHITE][QUEENSIDE] & b->bbs[PAWN][WHITE];
+		p_mg_score -= (3-PopCount64(pawn_shield)) * pawn_shield_penalty_qs;
+	}
+
+	// if black king is on one of the safe squares on the kingside
+	if (b->bbs[KING][BLACK] & safe_king_positions[BLACK][KINGSIDE]) {
+		uint64_t pawn_shield = pawn_shields[BLACK][KINGSIDE] & b->bbs[PAWN][BLACK];
+		p_mg_score += (3 - PopCount64(pawn_shield)) * pawn_shield_penalty_ks;
+	}
+
+	// if black king is on one of the safe squares on the queenside
+	if (b->bbs[KING][BLACK] & safe_king_positions[BLACK][QUEENSIDE]) {
+		uint64_t pawn_shield = pawn_shields[BLACK][QUEENSIDE] & b->bbs[PAWN][BLACK];
+		p_mg_score += (3 - PopCount64(pawn_shield)) * pawn_shield_penalty_qs;
+	}
+
+
+	//==================================================================//
+	// 																	//
+	// king safety (virtual mobility)									//
+	//																	//
+	//==================================================================//
 
 	// white king safety
-	uint64_t w_king = b->bbs[KING][WHITE];
-	uint8_t w_king_pos = BitScanForward64(w_king);
-
-	if (w_king_pos < 3 || (w_king_pos > 5 && w_king_pos < 8)) {
-
-		uint64_t w_pawn_shield_mask = front_spans[WHITE][w_king_pos] | attack_front_spans[WHITE][w_king_pos];
-		uint64_t w_pawn_shield_mask_2 = (w_pawn_shield_mask << 8) & b->bbs[PAWN][WHITE];
-
-		uint64_t w_pawn_shield = w_pawn_shield_mask & b->bbs[PAWN][WHITE];
-		uint64_t w_pawn_shield_2 = w_pawn_shield_mask_2 & b->bbs[PAWN][WHITE];
-
-		mg_score += (int)PopCount64(w_pawn_shield) * 20;
-		mg_score += (int)PopCount64(w_pawn_shield_2) * 10;
-	}
-
+	int8_t w_king_mobility = PopCount64(
+		attacks::get_rook_attacks(b->king_positions[WHITE], b->occupancy[WHITE] | b->bbs[PAWN][BLACK])
+		| attacks::get_bishop_attacks(b->king_positions[WHITE], b->occupancy[WHITE] | b->bbs[PAWN][BLACK]));
 	// black king safety
-	uint64_t b_king = b->bbs[KING][BLACK];
-	uint8_t b_king_pos = BitScanForward64(b_king);
+	int8_t b_king_mobility = PopCount64(
+		attacks::get_rook_attacks(b->king_positions[BLACK], b->occupancy[BLACK] | b->bbs[PAWN][WHITE])
+		| attacks::get_bishop_attacks(b->king_positions[BLACK], b->occupancy[BLACK] | b->bbs[PAWN][WHITE]));
 
-	if (b_king_pos > 62 || (b_king_pos > 55 && b_king_pos < 59)) {
+	p_mg_score += (b_king_mobility - w_king_mobility);
 
-		uint64_t b_pawn_shield_mask = front_spans[BLACK][b_king_pos] | attack_front_spans[BLACK][b_king_pos];
-		uint64_t b_pawn_shield_mask_2 = (b_pawn_shield_mask >> 8) & b->bbs[PAWN][BLACK];
-
-		uint64_t b_pawn_shield = b_pawn_shield_mask & b->bbs[PAWN][BLACK];
-		uint64_t b_pawn_shield_2 = b_pawn_shield_mask_2 & b->bbs[PAWN][BLACK];
-
-		mg_score -= (int)PopCount64(b_pawn_shield) * 20;
-		mg_score -= (int)PopCount64(b_pawn_shield_2) * 10;
-	}
-	//******************************************************************//
+	//==================================================================//
 	// 																	//
 	// store entry in TT												//
 	//																	//
+	//==================================================================//
+
+	pawn_tt.set_entry(b->pawn_hash_key, p_mg_score, p_eg_score);
+
+	(*mg_score) += p_mg_score;
+	(*eg_score) += p_eg_score;
+
+	return;
+}
+
+bool evaluator::is_draw(bitboard* b)
+{
+	if (b->occupancy[2] == (b->bbs[KING][WHITE] | b->bbs[KING][BLACK]))
+	{
+		return true;
+	}
+	else if ((b->bbs[PAWN][WHITE] | b->bbs[PAWN][BLACK]) == 0ULL)
+	{
+
+		//**************************************************************//
+		//																//
+		//  return 0 if endgame is drawn								//
+		//		basically check whether the pieces suffice to mate		//
+		//		or whether one side will not be able to win				//
+		//																//
+		//**************************************************************//
+
+		// check KR-KR
+		if (b->occupancy[2] == (b->bbs[KING][WHITE] | b->bbs[KING][BLACK] | b->bbs[ROOK][WHITE] | b->bbs[ROOK][BLACK]) && PopCount64(b->bbs[ROOK][WHITE]) == 1 && PopCount64(b->bbs[ROOK][BLACK]) == 1)
+		{
+			return true;
+		}
+		// check KNN-K, KN-K, KNN-KN
+		if (b->occupancy[2] == (b->bbs[KING][WHITE] | b->bbs[KING][BLACK] | b->bbs[KNIGHT][WHITE] | b->bbs[KNIGHT][BLACK])
+			&& ((PopCount64(b->bbs[KNIGHT][WHITE]) <= 2 && PopCount64(b->bbs[KNIGHT][BLACK]) <= 1)
+				|| (PopCount64(b->bbs[KNIGHT][WHITE]) <= 1 && PopCount64(b->bbs[KNIGHT][BLACK]) <= 2)))
+		{
+			return true;
+		}
+		// check KN-KB
+		if (b->occupancy[2] == (b->bbs[KING][WHITE] | b->bbs[KING][BLACK] | b->bbs[KNIGHT][WHITE] | b->bbs[KNIGHT][BLACK] | b->bbs[BISHOP][WHITE] | b->bbs[BISHOP][BLACK])
+			&& (// white has knight, black has bishop
+				(PopCount64(b->bbs[KNIGHT][WHITE]) == 1 && PopCount64(b->bbs[KNIGHT][BLACK]) == 0
+					&& PopCount64(b->bbs[BISHOP][BLACK]) == 1 && PopCount64(b->bbs[BISHOP][WHITE]) == 0)
+				// black has knight, white has bishop
+				|| (b->bbs[KNIGHT][WHITE] == 0ULL && PopCount64(b->bbs[KNIGHT][BLACK]) == 1
+					&& b->bbs[BISHOP][BLACK] == 0ULL && PopCount64(b->bbs[BISHOP][WHITE]) == 1)))
+		{
+			return true;
+		}
+		// check KB-K
+		if (b->occupancy[2] == (b->bbs[KING][WHITE] | b->bbs[KING][BLACK] | b->bbs[BISHOP][WHITE] | b->bbs[BISHOP][BLACK]) && ((PopCount64(b->bbs[BISHOP][WHITE]) == 1 && b->bbs[BISHOP][BLACK] == 0ULL) ||
+			(b->bbs[BISHOP][WHITE] == 0ULL && PopCount64(b->bbs[BISHOP][BLACK]) == 1)))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+int evaluator::tuner_eval(bitboard* b) {
+	int midgame_score = 0;
+	int endgame_score = 0;
+
+	uint8_t phase = 0;
+
+	uint8_t index = 0;
+	uint8_t type = 0;
+	uint64_t occ = b->occupancy[2];
+	uint8_t piece = EMPTY;
+
+
+	if (is_draw(b)) {
+		return 0;
+	}
+
+	//******************************************************************//
+	// 																	//
+	// evaluate material + piece square tables							//
+	//																	//
 	//******************************************************************//
 
-	pawn_tt.set_entry(b->pawn_hash_key, mg_score, mg_score);
+	while (occ != 0ULL)
+	{
+		index = BitScanForward64(occ);
+		piece = b->pieces[index];
+		type = b->types[index];
+		int factor = (piece < BLACK_PAWN) ? 1 : -1;
+		midgame_score += tuner_piece_values[MIDGAME][type] * factor + piece_square_tables[MIDGAME][piece][index];
+		endgame_score += tuner_piece_values[ENDGAME][type] * factor + piece_square_tables[ENDGAME][piece][index];
+		phase += game_phase_values[b->types[index]];
+		occ &= occ - 1;
+	}
 
+	if ((b->bbs[PAWN][WHITE] | b->bbs[PAWN][BLACK])) {
+		eval_pawn_structure(b, phase, &midgame_score, &endgame_score);
+	}
 
+	//******************************************************************//
+	// 																	//
+	// combine endgame and midgame scores								//
+	//																	//
+	//******************************************************************//
 
-	int score = (mg_score * phase + eg_score * (76 - phase)) / 76;
-
-	return (b->side_to_move) ? -score : score;
+	int score = (midgame_score * phase + (endgame_score) * (game_phase_sum - phase)) / game_phase_sum;
+	return score;
 }
+
 
 void evaluator::init_tables()
 {
@@ -586,13 +628,26 @@ const int evaluator::king_pst_eg[64] = {
 };
 
 
-const int evaluator::double_pawn_penalty[2][2][8] = {
-	{
-		{-40, -35, -30, -25, -25, -30, -35, -40}, 
-		{-60, -55, -45, -40, -40, -45, -55, -60}
-	},
-	{
-		{40, 35, 30, 25, 25, 30, 35, 40}, 
-		{60, 55, 45, 40, 40, 45, 55, 60}
-	}
+
+int evaluator::tuner_double_pawn_penalty[NUM_PHASES][8] = {
+	{29, 22, 31, 10, 6, 35, 48, 24},
+	{67, 35, 53, 16, 21, 48, 31, 49,}
 };
+
+
+// 46 19 32 9 9 36 48 24
+// 66 39 52 31 29 43 46 42
+
+/*
+Tuning finished with error: 0.0679752
+Piece values:
+117, 391, 435, 652, 1288, 0,
+108, 396, 418, 634, 1258, 0,
+Game Phase Values:
+0, 41, 40, 60, 101, 0,
+Pawn shield penalty (kingside): 13
+Pawn shield penalty (queenside): 28
+Double pawn penalty:
+29, 22, 31, 10, 6, 35, 48, 24,
+67, 35, 53, 16, 21, 48, 31, 49,
+*/
