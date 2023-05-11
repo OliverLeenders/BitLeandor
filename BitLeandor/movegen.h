@@ -54,17 +54,16 @@ public:
 
 		while (pushes != 0ULL) {
 			target = BitScanForward64(pushes);
-			l->moves[l->size] = bit_move((uint8_t)target - push_offset, (uint8_t)target, bit_move::quiet_move, PAWN, EMPTY);
+			l->moves[l->size].m = bit_move((uint8_t)target - push_offset, (uint8_t)target, bit_move::quiet_move, PAWN, EMPTY);
 			l->size++;
 			pushes &= pushes - 1;
 		}
 		while (double_pushes != 0ULL) {
 			target = BitScanForward64(double_pushes);
-			l->moves[l->size] = bit_move((uint8_t)target - double_push_offset, (uint8_t)target, bit_move::double_pawn_push, PAWN, EMPTY);
+			l->moves[l->size].m = bit_move((uint8_t)target - double_push_offset, (uint8_t)target, bit_move::double_pawn_push, PAWN, EMPTY);
 			l->size++;
 			double_pushes &= double_pushes - 1;
 		}
-
 	}
 
 	/**
@@ -118,7 +117,7 @@ public:
 				// the target is the en passant target square => the current capture is an en passant capture
 				if ((1ULL << target) == b->ep_target_square) {
 					// add the move to the movelist
-					l->moves[l->size] = bit_move((uint8_t)origin, (uint8_t)target, bit_move::ep_capture, PAWN, PAWN);
+					l->moves[l->size].m = bit_move((uint8_t)origin, (uint8_t)target, bit_move::ep_capture, PAWN, PAWN);
 					// increment movelist size counter
 					l->size++;
 				}
@@ -126,17 +125,17 @@ public:
 				else if ((1ULL << target) & promotion_rank) {
 					// [the captured piece cannot be a pawn; pawn only exist between the 2nd and 7th rank]
 					// add all moves (one for each piece type the pawn can promote to) to the movelist
-					l->moves[l->size] = bit_move((uint8_t)origin, (uint8_t)target, bit_move::queen_capture_promotion, PAWN, capture_type);
-					l->moves[l->size + 1] = bit_move((uint8_t)origin, (uint8_t)target, bit_move::rook_capture_promotion, PAWN, capture_type);
-					l->moves[l->size + 2] = bit_move((uint8_t)origin, (uint8_t)target, bit_move::bishop_capture_promotion, PAWN, capture_type);
-					l->moves[l->size + 3] = bit_move((uint8_t)origin, (uint8_t)target, bit_move::knight_capture_promotion, PAWN, capture_type);
+					l->moves[l->size].m = bit_move((uint8_t)origin, (uint8_t)target, bit_move::queen_capture_promotion, PAWN, capture_type);
+					l->moves[l->size + 1].m = bit_move((uint8_t)origin, (uint8_t)target, bit_move::rook_capture_promotion, PAWN, capture_type);
+					l->moves[l->size + 2].m = bit_move((uint8_t)origin, (uint8_t)target, bit_move::bishop_capture_promotion, PAWN, capture_type);
+					l->moves[l->size + 3].m = bit_move((uint8_t)origin, (uint8_t)target, bit_move::knight_capture_promotion, PAWN, capture_type);
 					// increment movelist size counter
 					l->size += 4;
 				}
 				// move is a "standard" capture
 				else {
 					// add move to movelist
-					l->moves[l->size] = bit_move((uint8_t)origin, (uint8_t)target, bit_move::capture, PAWN, capture_type);
+					l->moves[l->size].m = bit_move((uint8_t)origin, (uint8_t)target, bit_move::capture, PAWN, capture_type);
 					// increment movelist size counter
 					l->size++;
 				}
@@ -151,10 +150,10 @@ public:
 			// fetch the first push target (all targets exist on the 1st or 8th rank)
 			target = BitScanForward64(promotion_pushes);
 			// add moves to movelist (one move for each piece type the pawn can promote to)
-			l->moves[l->size] = bit_move((uint8_t)target - offset, (uint8_t)target, bit_move::queen_promotion, PAWN, EMPTY);
-			l->moves[l->size + 1] = bit_move((uint8_t)target - offset, (uint8_t)target, bit_move::rook_promotion, PAWN, EMPTY);
-			l->moves[l->size + 2] = bit_move((uint8_t)target - offset, (uint8_t)target, bit_move::bishop_promotion, PAWN, EMPTY);
-			l->moves[l->size + 3] = bit_move((uint8_t)target - offset, (uint8_t)target, bit_move::knight_promotion, PAWN, EMPTY);
+			l->moves[l->size].m = bit_move((uint8_t)target - offset, (uint8_t)target, bit_move::queen_promotion, PAWN, EMPTY);
+			l->moves[l->size + 1].m = bit_move((uint8_t)target - offset, (uint8_t)target, bit_move::rook_promotion, PAWN, EMPTY);
+			l->moves[l->size + 2].m = bit_move((uint8_t)target - offset, (uint8_t)target, bit_move::bishop_promotion, PAWN, EMPTY);
+			l->moves[l->size + 3].m = bit_move((uint8_t)target - offset, (uint8_t)target, bit_move::knight_promotion, PAWN, EMPTY);
 			// increment movelist size counter
 			l->size += 4;
 			// reset the lsb of the promotion pushes bitboard
@@ -183,7 +182,7 @@ public:
 			knight_attacks = attacks::knight_attacks[origin] & (~pieces);
 			while (knight_attacks != 0ULL) {
 				target = BitScanForward64(knight_attacks);
-				l->moves[l->size] = bit_move((uint8_t)origin, (uint8_t)target, bit_move::quiet_move, KNIGHT, EMPTY);
+				l->moves[l->size].m = bit_move((uint8_t)origin, (uint8_t)target, bit_move::quiet_move, KNIGHT, EMPTY);
 				l->size++;
 				knight_attacks = reset_lsb(knight_attacks);
 			}
@@ -206,7 +205,7 @@ public:
 			while (knight_attacks != 0ULL) {
 				target = BitScanForward64(knight_attacks);
 				capture_type = b->piece_type_from_index(target);
-				l->moves[l->size] = bit_move((uint8_t)origin, (uint8_t)target, bit_move::capture, KNIGHT, capture_type);
+				l->moves[l->size].m = bit_move((uint8_t)origin, (uint8_t)target, bit_move::capture, KNIGHT, capture_type);
 				l->size++;
 				knight_attacks = reset_lsb(knight_attacks);
 			}
@@ -227,7 +226,7 @@ public:
 			bishop_attacks = attacks::get_bishop_attacks(origin, b->occupancy[2]) & (~b->occupancy[2]);
 			while (bishop_attacks != 0ULL) {
 				target = BitScanForward64(bishop_attacks);
-				l->moves[l->size] = bit_move((uint8_t)origin, (uint8_t)target, bit_move::quiet_move, BISHOP, EMPTY);
+				l->moves[l->size].m = bit_move((uint8_t)origin, (uint8_t)target, bit_move::quiet_move, BISHOP, EMPTY);
 				l->size++;
 				bishop_attacks &= bishop_attacks - 1;
 			}
@@ -250,7 +249,7 @@ public:
 			while (bishop_attacks != 0ULL) {
 				target = BitScanForward64(bishop_attacks);
 				capture_type = b->piece_type_from_index(target);
-				l->moves[l->size] = bit_move((uint8_t)origin, (uint8_t)target, bit_move::capture, BISHOP, capture_type);
+				l->moves[l->size].m = bit_move((uint8_t)origin, (uint8_t)target, bit_move::capture, BISHOP, capture_type);
 				l->size++;
 				bishop_attacks = reset_lsb(bishop_attacks);
 			}
@@ -271,7 +270,7 @@ public:
 			rook_attacks = attacks::get_rook_attacks(origin, b->occupancy[2]) & (~b->occupancy[2]);
 			while (rook_attacks != 0ULL) {
 				target = BitScanForward64(rook_attacks);
-				l->moves[l->size] = bit_move((uint8_t)origin, (uint8_t)target, bit_move::quiet_move, ROOK, EMPTY);
+				l->moves[l->size].m = bit_move((uint8_t)origin, (uint8_t)target, bit_move::quiet_move, ROOK, EMPTY);
 				l->size++;
 				rook_attacks &= rook_attacks - 1;
 			}
@@ -295,7 +294,7 @@ public:
 			while (rook_attacks != 0ULL) {
 				target = BitScanForward64(rook_attacks);
 				capture_type = b->piece_type_from_index(target);
-				l->moves[l->size] = bit_move((uint8_t)origin, (uint8_t)target, bit_move::capture, ROOK, capture_type);
+				l->moves[l->size].m = bit_move((uint8_t)origin, (uint8_t)target, bit_move::capture, ROOK, capture_type);
 				l->size++;
 				rook_attacks &= rook_attacks - 1;
 			}
@@ -313,34 +312,33 @@ public:
 		// if white has the move
 		if (!side_to_move) {
 			if ((b->castling_rights & b->w_kingside) && !(b->occupancy[2] & w_kingside_castling_mask)) {
-				l->moves[l->size] = bit_move(E1, G1, bit_move::kingside_castle, KING, EMPTY);
+				l->moves[l->size].m = bit_move(E1, G1, bit_move::kingside_castle, KING, EMPTY);
 				l->size++;
 			}
 			if ((b->castling_rights & b->w_queenside) && !(b->occupancy[2] & w_queenside_castling_mask)) {
-				l->moves[l->size] = bit_move(E1, C1, bit_move::queenside_castle, KING, EMPTY);
+				l->moves[l->size].m = bit_move(E1, C1, bit_move::queenside_castle, KING, EMPTY);
 				l->size++;
 			}
 		}
 		// if black has the move
 		else {
 			if ((b->castling_rights & b->b_kingside) && !(b->occupancy[2] & b_kingside_castling_mask)) {
-				l->moves[l->size] = bit_move(E8, G8, bit_move::kingside_castle, KING, EMPTY);
+				l->moves[l->size].m = bit_move(E8, G8, bit_move::kingside_castle, KING, EMPTY);
 				l->size++;
 			}
 			if ((b->castling_rights & b->b_queenside) != 0 && !(b->occupancy[2] & b_queenside_castling_mask)) {
-				l->moves[l->size] = bit_move(E8, C8, bit_move::queenside_castle, KING, EMPTY);
+				l->moves[l->size].m = bit_move(E8, C8, bit_move::queenside_castle, KING, EMPTY);
 				l->size++;
 			}
 		}
-		uint64_t king = b->bbs[KING][side_to_move];
-		uint8_t origin = BitScanForward64(king);
+		uint8_t origin = b->king_positions[side_to_move];
 		uint8_t target;
 
 		uint64_t king_attacks = attacks::king_attacks[origin] & (~b->occupancy[2]);
 
 		while (king_attacks != 0ULL) {
 			target = BitScanForward64(king_attacks);
-			l->moves[l->size] = bit_move((uint8_t)origin, (uint8_t)target, bit_move::quiet_move, KING, EMPTY);
+			l->moves[l->size].m = bit_move((uint8_t)origin, (uint8_t)target, bit_move::quiet_move, KING, EMPTY);
 			l->size++;
 			king_attacks &= king_attacks - 1;
 		}

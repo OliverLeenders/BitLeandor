@@ -107,7 +107,7 @@ int evaluator::eval(bitboard* b)
 	}
 
 	if ((b->bbs[PAWN][WHITE] | b->bbs[PAWN][BLACK])) {
-		eval_pawn_structure(b, phase, &midgame_score, &endgame_score);
+		eval_pawn_structure(b, &midgame_score, &endgame_score);
 	}
 
 	//******************************************************************//
@@ -123,7 +123,7 @@ int evaluator::eval(bitboard* b)
 	return (b->side_to_move) ? -score : score;
 }
 
-void evaluator::eval_pawn_structure(bitboard* b, uint8_t phase, int* mg_score, int* eg_score)
+void evaluator::eval_pawn_structure(bitboard* b, int* mg_score, int* eg_score)
 {
 	int hash_score = pawn_tt.probe_mg(b->pawn_hash_key);
 	if (hash_score != transposition_table::VAL_UNKNOWN)
@@ -157,13 +157,13 @@ void evaluator::eval_pawn_structure(bitboard* b, uint8_t phase, int* mg_score, i
 	{
 		file = files[i];
 		if ((w_pawns & file) != 0ULL) { // at least one white pawn on file
-			p_mg_score -= ((int)PopCount64(w_pawns & file) - 1) * tuner_double_pawn_penalty[MIDGAME][i];
-			p_eg_score -= ((int)PopCount64(w_pawns & file) - 1) * tuner_double_pawn_penalty[ENDGAME][i];
+			p_mg_score -= ((int)PopCount64(w_pawns & file) - 1) * double_pawn_penalty[MIDGAME][i];
+			p_eg_score -= ((int)PopCount64(w_pawns & file) - 1) * double_pawn_penalty[ENDGAME][i];
 			pawn_islands[WHITE] |= 1 << i;
 		}
 		if ((b_pawns & file) != 0ULL) { // at least one black pawn on file
-			p_mg_score += ((int)PopCount64(b_pawns & file) - 1) * tuner_double_pawn_penalty[MIDGAME][i];
-			p_eg_score += ((int)PopCount64(b_pawns & file) - 1) * tuner_double_pawn_penalty[ENDGAME][i];
+			p_mg_score += ((int)PopCount64(b_pawns & file) - 1) * double_pawn_penalty[MIDGAME][i];
+			p_eg_score += ((int)PopCount64(b_pawns & file) - 1) * double_pawn_penalty[ENDGAME][i];
 			pawn_islands[BLACK] |= 1 << i;
 		}
 	}
@@ -357,7 +357,7 @@ int evaluator::tuner_eval(bitboard* b) {
 	}
 
 	if ((b->bbs[PAWN][WHITE] | b->bbs[PAWN][BLACK])) {
-		eval_pawn_structure(b, phase, &midgame_score, &endgame_score);
+		eval_pawn_structure(b, &midgame_score, &endgame_score);
 	}
 
 	//******************************************************************//
@@ -629,7 +629,7 @@ const int evaluator::king_pst_eg[64] = {
 
 
 
-int evaluator::tuner_double_pawn_penalty[NUM_PHASES][8] = {
+int evaluator::double_pawn_penalty[NUM_PHASES][8] = {
 	{29, 22, 31, 10, 6, 35, 48, 24},
 	{67, 35, 53, 16, 21, 48, 31, 49,}
 };

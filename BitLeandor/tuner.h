@@ -44,7 +44,7 @@ public:
 	};
 	static double mean_square_error(double k, int num_positions, std::ifstream* f);
 	static double mean_square_error(double k, std::vector<tuner_entry>* entries);
-
+	static int eval(tuner_entry e);
 	static void tune(double k);
 	static void init_coefficients(bitboard* b, std::vector<ttuple>* tuples);
 	static void init_weights();

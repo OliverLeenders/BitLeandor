@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <iostream>
 #include <intrin.h>
+#include <immintrin.h>
 #include "constants.h"
 
 [[nodiscard]] inline uint64_t set_bit(int bit) {
@@ -14,7 +15,7 @@
 }
 
 [[nodiscard]] inline uint64_t reset_lsb(uint64_t bb) {
-	return bb & bb - 1;
+	return bb & (bb - 1);
 }
 
 
@@ -108,21 +109,33 @@ const uint64_t b_kingside_castling_mask = 6917529027641081856ULL;
 Getting the index of the least significant set bit
 */
 [[nodiscard]] inline uint8_t BitScanForward64(uint64_t bb) {
+#ifdef __GNUC__
+	return __builtin_ctzll(bb);
+#endif // __GNUC__
 	unsigned long index;
 	_BitScanForward64(&index, bb);
 	return (uint8_t)index;
 }
 
 [[nodiscard]] inline uint8_t BitScanReverse64(uint64_t bb) {
+#ifdef __GNUC__
+	return __builtin_clzll(bb);
+#endif // __GNUC__
 	unsigned long index;
 	_BitScanReverse64(&index, bb);
 	return (uint8_t)index;
 }
 
 [[nodiscard]] inline uint8_t PopCount64(uint64_t bb) {
+#ifdef __GNUC__
+	return __builtin_popcountll(bb);
+#endif // __GNUC__
 	return (uint8_t)__popcnt64(bb);
 }
 
 [[nodiscard]] inline uint8_t PopCount8(uint8_t f) {
+#ifdef __GNUC__
+	return __builtin_popcount(f);
+#endif // __GNUC__
 	return (uint8_t)__popcnt(f);
 }

@@ -43,7 +43,7 @@ public:
 	void print_board();
 	~bitboard();
 	char castling_rights = 0;
-	const enum castling_rights_e
+	enum castling_rights_e
 	{
 		w_kingside = 1,
 		w_queenside = 2,

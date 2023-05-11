@@ -15,14 +15,15 @@ public:
 	uint8_t get_captured_type();
 	uint8_t get_piece_type();
 	uint32_t move = 0;
-	enum flags : uint16_t {
+
+	enum flags : uint8_t {
 		quiet_move,
 		double_pawn_push,
 		kingside_castle,
 		queenside_castle,
 		capture,
 		ep_capture,
-		knight_promotion = 8,
+		knight_promotion = 8U,
 		bishop_promotion,
 		rook_promotion,
 		queen_promotion,
@@ -31,6 +32,7 @@ public:
 		rook_capture_promotion,
 		queen_capture_promotion
 	};
+
 	static std::string to_string(bit_move m);
 	~bit_move();
 	static std::string squares_to_string[64];

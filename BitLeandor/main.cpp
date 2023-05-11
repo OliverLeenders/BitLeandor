@@ -1,14 +1,10 @@
 #include <iostream>
-#include <chrono>
+#include <fstream>
 
-#include "bitboard_util.h"
-#include "bitboard.h"
 #include "movegen.h"
 #include "perft.h"
 #include "search.h"
-#include "transposition_table.h"
 #include "tuner.h"
-#include <fstream>
 
 void uci_console();
 void bench();
@@ -21,7 +17,17 @@ double K = 1.31f;
 bit_move parse_move(std::vector<std::string>* split, int i);
 bitboard b = bitboard();
 
-int main() {
+int main(int argc, char* argv[]) {
+	// output compiler name
+#ifdef __GNUC__
+	std::cout << "Compiled using g++" << std::endl;
+#endif // __GNUC__
+
+#ifdef _MSC_VER
+	std::cout << "Compiled using MSVC" << std::endl;
+#endif // _MSC_VER
+
+
 	// initializing attack tables
 	attacks::init_attack_tables();
 
@@ -33,7 +39,7 @@ int main() {
 	// initializing transposition table
 	transposition_table::init_keys();
 	search::init_lmr();
-
+	tuner::init_weights();
 
 	std::string pos = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 	// std::string pos = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
@@ -44,7 +50,13 @@ int main() {
 	//std::string pos = "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8";
 	b.pos_from_fen(pos);
 
-
+	if (argc > 1) {
+		std::string arg_1 = std::string(argv[1]);
+		if (arg_1 == "-bench") {
+			bench();
+			return 0;
+		}
+	}
 
 	uci_console();
 
@@ -104,7 +116,7 @@ void uci_console() {
 				}
 				else if (split->at(1) == "epd") {
 					std::string epd = "";
-					for (int i = 2; i < split->size(); i++) {
+					for (uint16_t i = 2; i < split->size(); i++) {
 						epd += split->at(i) + " ";
 					}
 					b.pos_from_epd_line(epd);
@@ -206,7 +218,7 @@ void uci_console() {
 				int score = evaluator::eval(&b);
 				int ps_mg = 0;
 				int ps_eg = 0;
-				evaluator::eval_pawn_structure(&b, 0, &ps_mg, &ps_eg);
+				evaluator::eval_pawn_structure(&b, &ps_mg, &ps_eg);
 				std::cout << "pawn structure midgame: " << ps_mg << std::endl;
 				std::cout << "pawn structure endgame: " << ps_eg << std::endl;
 				std::cout << "total + material + pst: " << score << std::endl;
@@ -242,10 +254,18 @@ void bench()
 	std::ifstream file("fens_1000.txt");
 	std::cout << "Reading file \"fens_100.txt\" ... ";
 	int i = 0;
-	while (std::getline(file, line) && i < 1000) {
-		lines[i] = line;
-		i++;
+
+	if (file.is_open()) {
+		while (std::getline(file, line) && i < 1000) {
+			lines[i] = line;
+			i++;
+		}
 	}
+	else {
+		std::cout << "Could not find file." << std::endl;
+		return;
+	}
+
 	std::cout << "DONE." << std::endl << "Searching each FEN position with depth = 7 ... " << std::endl;
 	int nodes = 0;
 	for (i = 0; i < 1000; i++) {

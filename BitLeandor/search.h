@@ -26,10 +26,9 @@ public:
 
 	static int DEPTH;
 	static int SELDEPTH;
-	static std::chrono::time_point<std::chrono::steady_clock> ENDTIME;
-	static std::chrono::time_point<std::chrono::steady_clock> STARTTIME;
+	static std::chrono::time_point<std::chrono::high_resolution_clock> ENDTIME;
+	static std::chrono::time_point<std::chrono::high_resolution_clock> STARTTIME;
 	static movelist moves[256];
-	static scorelist scores[256];
 	
 	static int history[2][64][64];
 	static void clear_history();
@@ -58,8 +57,8 @@ public:
 	static int quiescence(bitboard* b, int alpha, int beta, int ply);
 	static void update_PV(bit_move* m, int depth);
 	static const int mvv_lva[6][6];
-	static void score_moves(movelist* m_l, scorelist* s_l, bool side_to_move);
-	static void fetch_next_move(movelist* m_l, scorelist* s_l, int index);
+	static void score_moves(movelist* m_l, bool side_to_move);
+	static void fetch_next_move(movelist* m_l, int index);
 	static void communicate();
 private:
 

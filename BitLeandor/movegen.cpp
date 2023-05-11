@@ -17,11 +17,12 @@ void movegen::generate_queen_qmoves(bitboard* b, movelist* l)
 	uint64_t queen_attacks = 0ULL;
 	while (queens != 0ULL)
 	{
-		_BitScanForward64(&origin, queens);
+		origin = BitScanForward64(queens);
 		queen_attacks = attacks::get_rook_attacks(origin, b->occupancy[2]) & (~b->occupancy[2]);
 		queen_attacks |= attacks::get_bishop_attacks(origin, b->occupancy[2]) & (~b->occupancy[2]);
-		while (_BitScanForward64(&target, queen_attacks)) {
-			l->moves[l->size] = bit_move((uint8_t)origin, (uint8_t)target, bit_move::quiet_move, QUEEN, EMPTY);
+		while (queen_attacks) {
+			target = BitScanForward64(queen_attacks);
+			l->moves[l->size].m = bit_move((uint8_t)origin, (uint8_t)target, bit_move::quiet_move, QUEEN, EMPTY);
 			l->size++;
 			queen_attacks &= queen_attacks - 1;
 		}
@@ -31,6 +32,7 @@ void movegen::generate_queen_qmoves(bitboard* b, movelist* l)
 
 void movegen::generate_queen_cmoves(bitboard* b, movelist* l)
 {
+	// BitScanForward(); // 000000000000 
 	uint64_t queens = b->bbs[QUEEN][b->side_to_move];
 	unsigned long origin;
 	unsigned long target;
@@ -38,12 +40,13 @@ void movegen::generate_queen_cmoves(bitboard* b, movelist* l)
 	uint8_t capture_type = EMPTY;
 	while (queens != 0ULL)
 	{
-		_BitScanForward64(&origin, queens);
+		origin = BitScanForward64(queens);
 		queen_attacks = attacks::get_rook_attacks(origin, b->occupancy[2]) & (b->occupancy[!b->side_to_move]);
 		queen_attacks |= attacks::get_bishop_attacks(origin, b->occupancy[2]) & (b->occupancy[!b->side_to_move]);
-		while (_BitScanForward64(&target, queen_attacks)) {
+		while (queen_attacks != 0ULL) {
+			target = BitScanForward64(queen_attacks);
 			capture_type = b->piece_type_from_index(target);
-			l->moves[l->size] = bit_move((uint8_t)origin, (uint8_t)target, bit_move::capture, QUEEN, capture_type);
+			l->moves[l->size].m = bit_move((uint8_t)origin, (uint8_t)target, bit_move::capture, QUEEN, capture_type);
 			l->size++;
 			queen_attacks &= queen_attacks - 1;
 		}
@@ -54,16 +57,15 @@ void movegen::generate_queen_cmoves(bitboard* b, movelist* l)
 
 void movegen::generate_king_cmoves(bitboard* b, movelist* l)
 {
-	uint64_t king = b->bbs[KING][b->side_to_move];
 	uint64_t opp_pieces = b->occupancy[!b->side_to_move];
-	unsigned long origin;
+	unsigned long origin = b->king_positions[b->side_to_move];
 	unsigned long target;
-	_BitScanForward64(&origin, king);
 	uint64_t king_attacks = attacks::king_attacks[origin] & opp_pieces;
 	uint8_t capture_type = EMPTY;
-	while (_BitScanForward64(&target, king_attacks)) {
+	while (king_attacks != 0ULL) {
+		target = BitScanForward64(king_attacks);
 		capture_type = b->piece_type_from_index(target);
-		l->moves[l->size] = bit_move((uint8_t)origin, (uint8_t)target, bit_move::capture, KING, capture_type);
+		l->moves[l->size].m = bit_move((uint8_t)origin, (uint8_t)target, bit_move::capture, KING, capture_type);
 		l->size++;
 		king_attacks &= king_attacks - 1;
 	}

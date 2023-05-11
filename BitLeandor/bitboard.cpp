@@ -363,7 +363,7 @@ int bitboard::piece_to_char(uint8_t piece)
 
 /**
  * Makes a so called "nullmove" on the board, meaning one side just passes the turn to the other.
- * 
+ *
  */
 void bitboard::make_null_move() {
 	bit_move nm = {};
@@ -377,7 +377,7 @@ void bitboard::make_null_move() {
 }
 /**
  * Undoes a nullmove.
- * 
+ *
  */
 void bitboard::unmake_null_move() {
 	board_state bs = this->game_history.back();
@@ -392,11 +392,11 @@ void bitboard::unmake_null_move() {
 
 
 /**
- * \brief Checks if a square is attacked by the opponent.
- * 
- * \param square the square to check
- * \param side_to_move the side to move
- * \return true if the square is attacked; false otherwise
+ * @brief Checks if a square is attacked by the opponent.
+ *
+ * @param square the square to check
+ * @param side_to_move the side to move
+ * @return true if the square is attacked; false otherwise
  */
 bool bitboard::is_square_attacked(int square, bool side_to_move) {
 	if (attacks::pawn_attacks[!side_to_move][square] & bbs[PAWN][side_to_move]) {
@@ -511,9 +511,7 @@ void bitboard::print_board()
 	std::cout << "FEN: " << pos_to_fen() << std::endl;
 	std::cout << "Hash: " << zobrist_key << std::endl;
 	std::cout << std::endl;
-
 }
-
 
 /**
  * Makes a given move on the board. (Updates zobrist keys accordingly)
@@ -532,9 +530,9 @@ void bitboard::make_move(bit_move* m)
 	const uint8_t flags = m->get_flags();
 	const uint8_t piece_type = m->get_piece_type();
 	const uint8_t captured_type = m->get_captured_type();
+
+	const bool    is_capture = captured_type != EMPTY;
 	// convert origin & target to bitmasks
-	const uint64_t origin_bit = set_bit(origin);
-	const uint64_t target_bit = set_bit(target);
 	const int8_t factor = (side_to_move) ? -1 : 1;
 	const uint8_t piece = pieces[origin];
 
@@ -542,7 +540,7 @@ void bitboard::make_move(bit_move* m)
 	this->full_move_clock += side_to_move;
 
 	this->ep_target_square = 0ULL;
-	if (captured_type != EMPTY) { // if is capture
+	if (is_capture) { // if is capture
 		// reset 50-move rule counter 
 		fifty_move_rule_counter = 0;
 		// if unmoved rook is captured => reset respective castling rights
@@ -613,16 +611,15 @@ void bitboard::make_move(bit_move* m)
 		side_to_move = !side_to_move;
 
 		unset_piece<true>(origin);
-		if (flags >= bit_move::capture) {
+		if (is_capture) {
 			unset_piece<true>(target);
 		}
 		place_piece<true>(piece, target);
-		
+
 		return;
 	}
 
-
-
+	// If move is rook move, update castling rights
 	else if (piece_type == ROOK) {
 		if (origin == A1) {
 			castling_rights &= ~(w_queenside);
@@ -641,7 +638,7 @@ void bitboard::make_move(bit_move* m)
 	side_to_move = !side_to_move;
 	unset_piece<true>(origin);
 
-	if (flags >= bit_move::capture && flags != bit_move::ep_capture) {
+	if (is_capture) {
 		unset_piece<true>(target);
 		place_piece<true>(piece, target);
 	}
@@ -683,11 +680,14 @@ void bitboard::unmake_move()
 	const uint8_t factor = (side_to_move == WHITE) ? 1 : -1;
 	const uint8_t piece = piece_type + (side_to_move)*BLACK_PAWN;
 
+	const bool is_capture = captured_type != EMPTY;
+	const bool is_ep = flags == bit_move::ep_capture;
+
 	if (piece_type == KING) {
 		king_positions[side_to_move] = origin;
 	}
 
-	if (flags == bit_move::ep_capture) {
+	if (is_ep) {
 		place_piece<false>((!side_to_move) * BLACK_PAWN, target - 8 * factor);
 	}
 
@@ -699,7 +699,7 @@ void bitboard::unmake_move()
 		unset_piece<false>(rook_target);
 	}
 
-	if (captured_type != EMPTY && flags != bit_move::ep_capture) {
+	if (is_capture && (!is_ep)) {
 		unset_piece<false>(target);
 		place_piece<false>(captured_type + (!side_to_move) * BLACK_PAWN, target);
 	}
@@ -724,14 +724,13 @@ void bitboard::unmake_move()
 template<bool update_zobrist>
 void bitboard::place_piece(uint8_t piece, uint8_t target)
 {
+	
+	const uint8_t	type	  = piece %  BLACK_PAWN;
+	const bool		color	  = piece >= BLACK_PAWN;
+	const uint64_t	target_bb = (1ULL) << target;
+
 	pieces[target] = piece;
-
-	const uint8_t type = piece % BLACK_PAWN;
 	types[target] = type;
-
-	const bool color = (piece >= BLACK_PAWN);
-
-	const uint64_t target_bb = (1ULL) << target;
 
 
 	// set piece bb
@@ -754,8 +753,8 @@ template<bool update_zobrist>
 void bitboard::unset_piece(uint8_t target)
 {
 	const uint8_t piece = pieces[target];
-	const uint8_t type = piece % BLACK_PAWN;
-	const bool color = piece >= BLACK_PAWN;
+	const uint8_t type  = piece % BLACK_PAWN;
+	const bool    color = piece >= BLACK_PAWN;
 
 	const uint64_t target_bb = ~((1ULL) << target);
 

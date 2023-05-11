@@ -1,10 +1,12 @@
 #include "perft.h"
-/// <summary>
-/// Recursive perft function
-/// </summary>
-/// <param name="b"></param>
-/// <param name="depth"></param>
-/// <returns></returns>
+/**
+ * @brief Recursive perft test function
+ *
+ * @param b board representation
+ * @param depth depth left
+ *
+ * @return number of positions
+*/
 uint64_t perft::run_perft(bitboard* b, int depth)
 {
 	uint64_t nodes = 0;
@@ -18,27 +20,40 @@ uint64_t perft::run_perft(bitboard* b, int depth)
 		movegen::generate_all_pseudo_legal_moves(b, &l);
 		for (int i = 0; i < l.size; i++)
 		{
-			bit_move m = l.moves[i];
-			if (b->is_legal<true>(&m))
-			{
-				b->make_move(&m);
+			bit_move m = l.moves[i].m;
+			if (m.get_flags() == bit_move::queenside_castle) {
+				bool side_to_move = b->side_to_move;
+				uint8_t origin = m.get_origin();
+				if (b->is_square_attacked(origin, !side_to_move)
+					|| b->is_square_attacked(origin - 1, !side_to_move) 
+					|| b->is_square_attacked(origin - 2, !side_to_move)) {
+					continue;
+				}
+			}
+			else if (m.get_flags() == bit_move::kingside_castle) {
+				bool side_to_move = b->side_to_move;
+				uint8_t origin = m.get_origin();
+				if (b->is_square_attacked(origin, !side_to_move) || b->is_square_attacked(origin + 1, !side_to_move) || b->is_square_attacked(origin + 2, !side_to_move)) {
+					continue;
+				}
+			}
+			b->make_move(&m);
+
+			bool side_to_move = b->side_to_move;
+
+			if (!b->is_square_attacked(b->king_positions[!side_to_move], side_to_move)) {
 				//std::cout << bit_move::to_string(m) << std::endl;
 				nodes += run_perft(b, depth - 1);
-				b->unmake_move();
 			}
+			b->unmake_move();
+
 		}
 		return nodes;
 	}
 
 }
 
-/// <summary>
-/// Perft test for a given position and depth 
-/// prints the number of nodes at each depth for each move
-/// </summary>
-/// <param name="b">the position </param>
-/// <param name="depth">perft depth</param>
-/// <returns></returns>
+
 uint64_t perft::run_perft_console(bitboard* b, int depth)
 {
 	uint64_t nodes = 0;
@@ -50,29 +65,49 @@ uint64_t perft::run_perft_console(bitboard* b, int depth)
 	{
 		movelist l;
 		movegen::generate_all_pseudo_legal_moves(b, &l);
+		std::chrono::time_point<std::chrono::high_resolution_clock> start = std::chrono::high_resolution_clock::now();
 		bit_move m;
 		for (int i = 0; i < l.size; i++)
 		{
-			m = l.moves[i];
-			if (b->is_legal<true>(&m))
-			{
-				std::cout << bit_move::to_string(m) << ": ";
-				
-				b->make_move(&m);
-				
+			m = l.moves[i].m;
+			if (m.get_flags() == bit_move::queenside_castle) {
+				bool side_to_move = b->side_to_move;
+				uint8_t origin = m.get_origin();
+				if (b->is_square_attacked(origin, !side_to_move)
+					|| b->is_square_attacked(origin - 1, !side_to_move) 
+					|| b->is_square_attacked(origin - 2, !side_to_move)) {
+					continue;
+				}
+			}
+			else if (m.get_flags() == bit_move::kingside_castle) {
+				bool side_to_move = b->side_to_move;
+				uint8_t origin = m.get_origin();
+				if (b->is_square_attacked(origin, !side_to_move) || b->is_square_attacked(origin + 1, !side_to_move) || b->is_square_attacked(origin + 2, !side_to_move)) {
+					continue;
+				}
+			}
+			std::cout << bit_move::to_string(m) << ": ";
+
+			b->make_move(&m);
+
+			bool side_to_move = b->side_to_move;
+
+			if (!b->is_square_attacked(b->king_positions[!side_to_move], side_to_move)) {
 				uint64_t curr_nodes = run_perft(b, depth - 1);
 				nodes += curr_nodes;
 				std::cout << curr_nodes << std::endl;
-				b->unmake_move();
 			}
-			else {
-				// std::cout << "\t[" << bit_move::to_string(m) << "] (" << (int)m.get_flags() << "): " << std::endl;
-				// b->print_board();
-				// std::cout << std::endl;
-			}
-		}
-		std::cout << "Total nodes: " << nodes << std::endl;
+			b->unmake_move();
 
+		}
+		std::chrono::time_point<std::chrono::high_resolution_clock> end = std::chrono::high_resolution_clock::now();
+		std::cout << std::endl;
+		std::cout << "Total nodes : " << nodes << std::endl;
+
+		long long d = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+		std::cout << "Duration    : " << d << " ms" << std::endl;
+		std::cout << "Perft NPS   : " << nodes / d * 1000 << std::endl;
+		std::cout << std::endl;
 		return nodes;
 	}
 }

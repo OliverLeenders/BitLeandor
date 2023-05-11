@@ -1,20 +1,44 @@
+/**
+ * @file search.cpp
+ * @author Oliver Leenders (oliver.leenders@gmx.net)
+ * @brief Contains all data declarations and function declarations needed for search.
+ * @version 0.1
+ * @date 2023-05-04
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
+
 #include "search.h"
 
+//====================================================//
+//
 // defining static variables
+//
+//====================================================//
 
+/**
+ * @brief The PV (Principal Variation) table. Indexed by ply (from root of search)
+ * and the moves in the PV.
+ */
 bit_move search::PV[MAX_PLY][MAX_PV_SIZE] = {};
+
+/**
+ * @brief An array containing for each ply the length of the PV at this ply.
+ */
 int search::PV_SIZE[MAX_DEPTH] = {};
+
+
 bit_move search::killers[2][MAX_PV_SIZE] = {};
 int search::history[2][64][64] = { {{0}} };
 int search::DEPTH = 0;
 int search::SELDEPTH = 0;
 int search::prev_pv_size = 0;
-std::chrono::time_point<std::chrono::steady_clock> search::ENDTIME = {};
-std::chrono::time_point<std::chrono::steady_clock> search::STARTTIME = {};
+std::chrono::time_point<std::chrono::high_resolution_clock> search::ENDTIME = {};
+std::chrono::time_point<std::chrono::high_resolution_clock> search::STARTTIME = {};
 bool search::stop_now = false;
 
 movelist search::moves[256] = {};
-scorelist search::scores[256] = {};
 transposition_table search::tt = transposition_table();
 
 int search::NODES_SEARCHED = 0;
@@ -30,6 +54,14 @@ const int search::mvv_lva[6][6] = {
 
 int search::lmr[MAX_PV_SIZE][MAX_PV_SIZE] = { {0} };
 
+/**
+ * @brief Performs an iterative deepening PVS alpha-beta search.
+ *
+ * @param b board representation
+ * @param depth depth to search to
+ * @param quiet flag indicating wether search info should be logged to stdout
+ * @return Nodes searched
+ */
 int search::search_iterative_deepening(bitboard* b, int depth, bool quiet)
 {
 	stop_now = false;
@@ -39,11 +71,11 @@ int search::search_iterative_deepening(bitboard* b, int depth, bool quiet)
 	int score = 0;
 	int TOTAL_NODES = 0;
 	prev_pv_size = 0;
-	//**********************************************************//
-	// 															//
-	// iterate from depth 1 to n								//
-	// 															//
-	//**********************************************************//
+	//==========================================================//
+	//
+	// iterate from depth 1 to n
+	//
+	//==========================================================//
 
 	STARTTIME = std::chrono::high_resolution_clock::now();
 
@@ -100,9 +132,9 @@ int search::search_iterative_deepening(bitboard* b, int depth, bool quiet)
 		//========================================================//
 		//
 		// print main info to stdout
-		// 
+		//
 		// score, depth, seldepth, pv
-		// 
+		//
 		//========================================================//
 
 		if (!quiet) {
@@ -120,11 +152,11 @@ int search::search_iterative_deepening(bitboard* b, int depth, bool quiet)
 			}
 
 			best_move = PV[0][0];
-			
+
 			//========================================================//
 			//
-			// print rest of uci info to stdout 
-			// 
+			// print rest of uci info to stdout
+			//
 			// nodes, nps
 			//
 			//========================================================//
@@ -140,16 +172,17 @@ int search::search_iterative_deepening(bitboard* b, int depth, bool quiet)
 			std::cout << "time " << duration_ms << " ";
 
 			//========================================================//
-			// 
-			// print PV to stdout 
+			//
+			// print PV to stdout
 			//
 			//========================================================//
 
 			gather_and_print_pv(b, score, i);
 
+			std::cout << " num_fails " << (int)num_fails;
 			// end the line
 			std::cout << std::endl;
-			
+
 		}
 		// reset PV-table
 
@@ -164,11 +197,21 @@ int search::search_iterative_deepening(bitboard* b, int depth, bool quiet)
 	return TOTAL_NODES;
 }
 
+/**
+ * @brief Iterates over the PV table and prints the PV to stdout.
+ * When the PV contains a null move it should fail gently.
+ * When the PV contains an illegal move, it should report this to stdout.
+ *
+ * It also rehashes the PV nodes into the Transposition Table.
+ *
+ * @param b board representation
+ * @param score the score determined by the search
+ * @param curr_depth the depth of the search at the point of calling this
+ */
 void search::gather_and_print_pv(bitboard* b, int score, int curr_depth) {
 	bool root_side = b->side_to_move;
 	int j;
 
-	
 	if (PV_SIZE[0] != 0) {
 		std::cout << "pv ";
 
@@ -212,11 +255,18 @@ void search::gather_and_print_pv(bitboard* b, int score, int curr_depth) {
 
 }
 
+/**
+ * @brief Performs a quiescence search (searching only captures) until no captures are possible anymore.
+ * When there is a check, all moves -- not only captures -- are searched.
+ *
+ * @param b the board representation
+ * @param alpha lower-bound for alpha-beta pruning
+ * @param beta upper-boud for alpha-beta pruning
+ * @param ply the ply from the root of the search tree
+ * @return score of the position
+ */
 int search::quiescence(bitboard* b, int alpha, int beta, int ply)
 {
-	NODES_SEARCHED++;
-	QNODES_SEARCHED++;
-
 	/*bit_move hash_move = bit_move();
 	int hash_score = tt.probe_qsearch(b->zobrist_key, ply, alpha, beta, &hash_move);
 	if (hash_score != tt.VAL_UNKNOWN)
@@ -265,7 +315,6 @@ int search::quiescence(bitboard* b, int alpha, int beta, int ply)
 
 	int num_legal = 0;
 	moves[ply].size = 0;
-	scores[ply].size = 0;
 	if (is_check)
 	{
 		movegen::generate_all_pseudo_legal_moves(b, &moves[ply]);
@@ -275,15 +324,15 @@ int search::quiescence(bitboard* b, int alpha, int beta, int ply)
 		movegen::generate_all_captures(b, &moves[ply]);
 	}
 
-	uint8_t flag = tt_entry::UPPER_BOUND;
+	// uint8_t flag = tt_entry::UPPER_BOUND;
 	bit_move best_move = bit_move();
 
 	int size = moves[ply].size;
-	score_moves(&moves[ply], &scores[ply], b->side_to_move);
+	score_moves(&moves[ply], b->side_to_move);
 	for (int i = 0; i < size; i++)
 	{
-		fetch_next_move(&moves[ply], &scores[ply], i);
-		bit_move m = moves[ply].moves[i];
+		fetch_next_move(&moves[ply], i);
+		bit_move m = moves[ply].moves[i].m;
 		if (b->is_legal<true>(&m))
 		{
 			num_legal++;
@@ -292,7 +341,10 @@ int search::quiescence(bitboard* b, int alpha, int beta, int ply)
 			{
 				continue;
 			}
+
 			b->make_move(&m);
+			NODES_SEARCHED++;
+			QNODES_SEARCHED++;
 
 			int score = -quiescence(b, -beta, -alpha, ply + 1);
 
@@ -307,7 +359,7 @@ int search::quiescence(bitboard* b, int alpha, int beta, int ply)
 			if (score > alpha)
 			{
 				alpha = score;
-				flag = tt_entry::EXACT;
+				// flag = tt_entry::EXACT;
 				best_move = m;
 			}
 		}
@@ -320,6 +372,11 @@ int search::quiescence(bitboard* b, int alpha, int beta, int ply)
 	return alpha;
 }
 
+/**
+ * @brief Initializes the values for the Late-Move-Reduction table (LMR table).
+ *
+ * The LMR table is indexed by depth first and move_number second.
+ */
 void search::init_lmr()
 {
 	for (int d = 0; d < 256; d++)
@@ -327,12 +384,21 @@ void search::init_lmr()
 		for (int m = 0; m < 256; m++)
 		{
 			lmr[d][m] = (int)(1.25 + log(d) * log(m) * 100 / 267);
-			// std::cout << lmr[d][m] << ", ";
 		}
-		// std::cout << std::endl;
 	}
 }
 
+/**
+ * @brief Implementation of alpha-beta pruning function. Searches until time has
+ * elapsed or until given depth has been reached.
+ *
+ * @param b the board representation in order to make moves and evaluate positions
+ * @param depth the maximum depth to search to
+ * @param alpha lower bound for alpha-beta pruning
+ * @param beta upper bound for alpha-beta pruning
+ * @param ply the current ply from the root of the search-tree
+ * @return the score of the position
+ */
 int search::alpha_beta(bitboard* b, int depth, int alpha, int beta, int ply)
 {
 	// if time is up fail low
@@ -341,17 +407,17 @@ int search::alpha_beta(bitboard* b, int depth, int alpha, int beta, int ply)
 	{
 		return alpha;
 	}
-	// check if time is up or so
+	// check if time is up after every 2048 nodes (also check for user input)
 	if (NODES_SEARCHED % 2048 == 0)
 	{
 		communicate();
 	}
 
-	//**********************************************************//
-	//															//
-	// check extension											//
-	//															//
-	//**********************************************************//
+	//===========================================================//
+	//
+	// check extension
+	//
+	//===========================================================//
 
 	// check if we are in check or not
 	bool side_to_move = b->side_to_move;
@@ -361,21 +427,25 @@ int search::alpha_beta(bitboard* b, int depth, int alpha, int beta, int ply)
 	// if we are in check, extend search by 1 ply
 	depth += is_check;
 
-	//**********************************************************//
-	//															//
-	// drop into quiescence search								//
-	//															//
-	//**********************************************************//
+	//==========================================================//
+	//
+	// drop into quiescence search
+	//
+	//==========================================================//
 
 	if (depth == 0)
 	{
 		return quiescence(b, alpha, beta, ply);
 	}
 
-	// if we dont drop into qsearch, increment node counter
-	NODES_SEARCHED++;
-
+	//==========================================================//
+	//
 	// check for draw by repetition
+	//
+	// go back through the game history and check if the zobrist
+	// key of the current position appeared already 3 times.
+	//
+	//==========================================================//
 	uint8_t rep_count = 1;
 	if (ply != 0) {
 		for (size_t i = b->game_history.size(); i > 0; i--)
@@ -442,11 +512,11 @@ int search::alpha_beta(bitboard* b, int depth, int alpha, int beta, int ply)
 	bool post_null_move = b->game_history.size() > 0 && b->game_history.back().last_move.move == 0;
 	bool has_only_pawns = b->occupancy[side_to_move] == (b->bbs[PAWN][side_to_move] | b->bbs[KING][side_to_move]);
 
-	//**********************************************************//
-	//															//
-	// mate dist pruning										//
-	//															//
-	//**********************************************************//
+	//==========================================================//
+	//
+	// mate dist pruning
+	//
+	//==========================================================//
 	{
 		int mating_value = MATE - ply;
 		if (mating_value < beta)
@@ -515,7 +585,10 @@ non_generated_moves:
 		{
 			num_legal++;
 			num_quiets += hash_move.get_flags() < 4;
+
 			b->make_move(&hash_move);
+			NODES_SEARCHED++;
+
 			int score = -alpha_beta(b, depth - 1, -beta, -alpha, ply + 1);
 			b->unmake_move();
 			if (score >= beta)
@@ -546,22 +619,25 @@ generate:
 	}
 
 	moves[ply].size = 0;
-	scores[ply].size = 0;
 
 	if (!generate_quiets)
 	{
 		movegen::generate_all_captures(b, &moves[ply]);
+		if (moves->size == 0) {
+			generate_quiets = true;
+			goto generate;
+		}
 	}
 	else
 	{
 		movegen::generate_all_quiet_moves(b, &moves[ply]);
 	}
-	score_moves(&moves[ply], &scores[ply], side_to_move);
+	score_moves(&moves[ply], side_to_move);
 
 	for (int i = 0; i < moves[ply].size; i++)
 	{
-		fetch_next_move(&moves[ply], &scores[ply], i);
-		bit_move m = moves[ply].moves[i];
+		fetch_next_move(&moves[ply], i);
+		bit_move m = moves[ply].moves[i].m;
 
 		if (b->is_legal<true>(&m))
 		{
@@ -597,6 +673,7 @@ generate:
 			LMR = 0 + (!(m.get_flags() >= 4) && (num_legal > 1)) * (lmr[depth - 1][num_legal]);
 
 			b->make_move(&m);
+			NODES_SEARCHED++;
 			int score;
 			if (flag == tt_entry::EXACT)
 			{
@@ -693,53 +770,76 @@ void search::clear_PV() {
 	}
 }
 
-void search::score_moves(movelist* m_l, scorelist* s_l, bool side_to_move)
+/**
+ * @brief Iterates over move list and scores them according to their respective
+ * move-ordering scores.
+ *
+ * Captures are scored with MVV-LVA scoring, non-captures are sorted with scores
+ * from the history-heuristic.
+ *
+ * @param m_l Movelist
+ * @param s_l Scorelist
+ * @param side_to_move Side to move
+ */
+void search::score_moves(movelist* m_l, bool side_to_move)
 {
-	s_l->size = m_l->size;
 	for (int i = 0; i < m_l->size; i++)
 	{
-		bit_move m = m_l->moves[i];
-		if (m.get_flags() >= 4)
+		movelist::ML_entry* e = &m_l->moves[i];
+		bit_move m = e->m;
+		int score;
+		if (m.get_flags() >= bit_move::capture)
 		{
-			s_l->scores[i] = mvv_lva[m.get_piece_type()][m.get_captured_type()];
+			score =  mvv_lva[m.get_piece_type()][m.get_captured_type()];
+			e->score = score;
 		}
 		else
 		{
-			s_l->scores[i] = history[side_to_move][m.get_origin()][m.get_target()];
+			score = history[side_to_move][m.get_origin()][m.get_target()];
+			e->score = score;
 		}
 	}
 }
 
-/// <summary>
-/// Swaps the move with the highest score in the move list to the back of the list. Also swaps the scores.
-/// Basically a selection sort.
-/// </summary>
-/// <param name="m_l">Movelist</param>
-/// <param name="s_l">Scorelist</param>
-/// <param name="index">Index pointing to next element after sorted area</param>
-void search::fetch_next_move(movelist* m_l, scorelist* s_l, int index)
+/**
+ * @brief Swaps the move with the highest score in the move list to the back of the list. Also swaps the scores.
+ * Basically a selection sort.
+ *
+ * @param m_l Movelist
+ * @param s_l Scorelist
+ * @param index Index pointing to next element after sorted area
+ */
+void search::fetch_next_move(movelist* m_l, int index)
 {
+	// TODO: find bug here, I guess.
 	// defining temp variables to store the move and score
-	int max_score = s_l->scores[index];
-	int original_score_index = index;
-	for (int i = index; i < m_l->size; i++)
+
+	// IDEA: 	* sorted area at the beginning of the array
+	// 			* Iterate over array and swap entries such that move with max score is appended to sorted area
+	int max_score = m_l->moves[index].score;
+	int max_index = index;
+	int score;
+	for (int i = index + 1; i < m_l->size; i++)
 	{
-		if (s_l->scores[i] > max_score)
+		score = m_l->moves[i].score;
+		if (score > max_score)
 		{
-			max_score = s_l->scores[i];
-			original_score_index = i;
+			max_score = score;
+			max_index = i;
 		}
 	}
-	if (original_score_index != index)
+
+	if (max_index != index)
 	{
-		bit_move max_move = m_l->moves[original_score_index];
-		m_l->moves[original_score_index] = m_l->moves[index];
+		movelist::ML_entry max_move = m_l->moves[max_index];
+		m_l->moves[max_index] = m_l->moves[index];
 		m_l->moves[index] = max_move;
-		s_l->scores[original_score_index] = s_l->scores[index];
-		s_l->scores[index] = max_score;
 	}
 }
 
+/**
+ * @brief Clears the killer moves.
+ */
 void search::clear_killers() {
 	for (int i = 0; i < MAX_PLY; i++)
 	{
@@ -748,6 +848,9 @@ void search::clear_killers() {
 	}
 }
 
+/**
+ * @brief Clears the history table.
+ */
 void search::clear_history() {
 	for (int i = 0; i < 64; i++) {
 		for (int j = 0; j < 64; j++) {
@@ -757,6 +860,9 @@ void search::clear_history() {
 	}
 }
 
+/**
+ * @brief Checks if search time is up and checks for user input that would trigger search abortion.
+ */
 void search::communicate()
 {
 	if (ENDTIME.time_since_epoch().count() != 0LL && std::chrono::high_resolution_clock().now().time_since_epoch().count() > ENDTIME.time_since_epoch().count())
