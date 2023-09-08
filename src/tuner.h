@@ -32,7 +32,7 @@ public:
 	*/
 	struct ttuple {
 		uint16_t index = 0;
-		int8_t white_coefficient, black_coefficient = 0;
+		int8_t white_coefficient = 0, black_coefficient = 0;
 	};
 	struct tuner_entry {
 		int static_eval = 0;

@@ -69,6 +69,7 @@ int search::search_iterative_deepening(bitboard *b, int depth, bool quiet) {
         SELDEPTH = curr_depth; // the selective search depth
         score = 0;             // score of the position
         int num_fails = 0;     // number of aspiration window fails
+        bool valid_score = false;
 
         // if depth == 1, search without aspiration windows
 
@@ -103,7 +104,13 @@ int search::search_iterative_deepening(bitboard *b, int depth, bool quiet) {
                 score = alpha_beta(b, curr_depth, prev_alpha, prev_beta, 0);
                 num_fails++;
             }
-            prev_score = score;
+            // if we abort due to time (or quit) we should only use the score if it lies inside the
+            // aspiration window, since it would need to be re-searched otherwise
+            if (score > prev_alpha && score < prev_beta) {
+                prev_score = score;
+                valid_score = true;
+            }
+
         }
 
         //========================================================================================//
@@ -164,32 +171,38 @@ int search::search_iterative_deepening(bitboard *b, int depth, bool quiet) {
             // end the line
             std::cout << std::endl;
         }
-        best_move = PV[0][0];
+        if (valid_score) {
+            best_move = PV[0][0];
+        }
         TOTAL_NODES += NODES_SEARCHED;
         if (stop_now) {
             break;
         }
     }
 
-    if (!quiet)
+    if (!quiet) {
         std::cout << "bestmove " << bit_move::to_string(best_move) << std::endl;
+    }
     return TOTAL_NODES;
 }
 
 int search::quiescence(bitboard *b, int alpha, int beta, int ply) {
     uint8_t king_pos = b->king_positions[b->side_to_move];
 
+    // check if we are in check or not
     bool is_check = b->is_square_attacked(king_pos, !b->side_to_move);
-
     int static_eval;
 
+    // if is in check, static eval should be mate score
     if (is_check) {
-        static_eval = -MATE + ply;
+        static_eval = -MATE;
     } else {
         static_eval = evaluator::eval(b);
     }
 
-    if (static_eval >= beta) {
+    // if static eval is greater than beta, return beta
+    // this assumes that the side to move can does not have to capture or evade multiple attacks.
+    if (!is_check && static_eval >= beta) {
         return beta;
     }
 
@@ -205,7 +218,6 @@ int search::quiescence(bitboard *b, int alpha, int beta, int ply) {
         movegen::generate_all_captures(b, &moves[ply]);
     }
 
-    // uint8_t flag = tt_entry::UPPER_BOUND;
     bit_move best_move = bit_move();
 
     int size = moves[ply].size;
@@ -283,7 +295,7 @@ void search::gather_and_print_pv(bitboard *b, int score, int curr_depth) {
                        (b->side_to_move == root_side) ? score : -score, tt_entry::EXACT, m);
             }
             // if score is mate score, scores need to reflect distance to mate as they are stored in
-            // the transposition
+            // the transposition table
             else {
                 tt.set(b->zobrist_key, curr_depth - pv_index, pv_index,
                        (b->side_to_move == root_side) ? MATE : -MATE, tt_entry::EXACT, m);
@@ -342,12 +354,12 @@ int search::alpha_beta(bitboard *b, int depth, int alpha, int beta, int ply) {
 
     //============================================================================================//
     //
-    // drop into quiescence search
+    // check for draw by 50 move rule
     //
     //============================================================================================//
 
-    if (depth == 0) {
-        return quiescence(b, alpha, beta, ply);
+    if (b->fifty_move_rule_counter >= 100) {
+        return 0;
     }
 
     //============================================================================================//
@@ -377,12 +389,12 @@ int search::alpha_beta(bitboard *b, int depth, int alpha, int beta, int ply) {
 
     //============================================================================================//
     //
-    // check for draw by 50 move rule
+    // drop into quiescence search
     //
     //============================================================================================//
 
-    if (b->fifty_move_rule_counter >= 100) {
-        return 0;
+    if (depth == 0) {
+        return quiescence(b, alpha, beta, ply);
     }
 
     //============================================================================================//
@@ -396,6 +408,7 @@ int search::alpha_beta(bitboard *b, int depth, int alpha, int beta, int ply) {
     // NanoPixel]).
     bool pv = (beta - alpha) != 1;
     bool zero_window = !pv;
+    // the selective depth should only be increased if the node is a PV-node
     if (pv) {
         SELDEPTH = std::max(ply, SELDEPTH);
     }
@@ -418,10 +431,11 @@ int search::alpha_beta(bitboard *b, int depth, int alpha, int beta, int ply) {
 
     bit_move non_generated_move = hash_move;
 
-    // if we got a hit in the TT and we are neither at root or have a zero-window, we can return the
-    // score found
-    if (hash_score != tt_entry::VAL_UNKNOWN && ply != 0 && zero_window) {
-        return hash_score;
+    // if we got a hit in the TT and we are neither at root nor find a score inside the a-b-window
+    // (important for avoiding pv-shortening), we can return the score found
+    if (hash_score != tt_entry::VAL_UNKNOWN && ply != 0 /*&& zero_window*/ &&
+        (hash_score <= alpha || hash_score >= beta)) {
+        // return hash_score;
     }
 
     int static_eval = evaluator::eval(b);
@@ -465,16 +479,16 @@ int search::alpha_beta(bitboard *b, int depth, int alpha, int beta, int ply) {
     //
     //============================================================================================//
 
-    if (depth > 2 && !is_check && !has_only_pawns /*&& zero_window*/ && !post_null_move /*&&
-        static_eval >= beta*/) {
-        b->make_null_move();
-        // run a zero window search with reduced depth
-        int null_score = -alpha_beta(b, depth - 2 - 1, -beta, -beta + 1, ply + 1);
-        b->unmake_null_move();
-        if (null_score >= beta) {
-            return beta;
-        }
-    }
+    // if (depth > 2 && !is_check && !has_only_pawns /*&& zero_window*/ && !post_null_move &&
+    //     static_eval >= beta) {
+    //     b->make_null_move();
+    //     // run a zero window search with reduced depth
+    //     int null_score = -alpha_beta(b, depth - 2 - 1, -beta, -beta + 1, ply + 1);
+    //     b->unmake_null_move();
+    //     if (null_score >= beta) {
+    //         return beta;
+    //     }
+    // }
 
     //============================================================================================//
     //
@@ -509,10 +523,6 @@ non_generated_moves:
                 return score;
             }
             if (score > alpha) {
-                // if (non_generated_move.get_flags() < bit_move::capture) {
-                //     history[b->side_to_move][non_generated_move.get_origin()]
-                //            [non_generated_move.get_target()] += ply * ply;
-                // }
                 alpha = score;
                 update_PV(&non_generated_move, ply);
             }
@@ -525,6 +535,7 @@ non_generated_moves:
     }
 
 generate:
+    // if we have already searched all non-generated moves, generate captures and later quiet moves
     if (generate_quiets && step < 2) {
         non_generated_move = killers[step][ply];
         step++;
@@ -550,70 +561,24 @@ generate:
         bit_move m = moves[ply].moves[i].m;
         if (m.move == hash_move.move || m.move == killers[0][ply].move ||
             m.move == killers[1][ply].move) {
-            // continue;
+            continue;
         }
 
         if (b->is_legal<true>(&m)) {
             num_legal++;
             uint8_t move_flags = m.get_flags();
-            if (move_flags < 4 && !is_check && zero_window) {
-                // futility pruning
-                // if (flag == tt_entry::EXACT && depth == 1) {
-                //     if (static_eval + 250 < alpha) {
-                //         continue;
-                //     }
-                // }
-
-                // // extended futility pruning
-                // if (flag == tt_entry::EXACT && depth == 2) {
-                //     if (static_eval + 450 < alpha) {
-                //         // prune branch
-                //         continue;
-                //     }
-                // }
-
-                // late move leaf pruning
-                // if (flag == tt_entry::EXACT && depth == 1)
-                // {
-                // 	if (num_quiets > 7)
-                // 	{
-                // 		continue;
-                // 	}
-                // }
+            bool is_quiet_move = move_flags < bit_move::capture;
+            num_quiets += is_quiet_move;
+            if (is_quiet_move && !is_check && zero_window) {
+                // some pruning can go here
                 num_quiets++;
             }
-            LMR = 0 + (!(m.get_flags() >= 4) && (num_legal > 1)) * (lmr[depth - 1][num_legal]);
+            LMR = 0 + (is_quiet_move && (num_legal > 1)) * (lmr[depth - 1][num_legal]);
             b->make_move(&m);
             NODES_SEARCHED++;
             int score;
 
-            //====================================================================================//
-            //
-            // PVS search
-            //
-            // Idea: Search with full window until alpha is improved, all
-            // 		 following nodes with null window.
-            //
-            //====================================================================================//
-
-            // if we have already searched some move with the full a/b-window...
-            // if (flag == tt_entry::EXACT) {
-            //     // search at reduced depth with null window
-            //     score = -alpha_beta(b, depth - 1 /*- LMR*/, -alpha - 1, -alpha, ply + 1);
-            //     // if search fails
-            //     // if (score > alpha && score < beta) {
-            //     //     // research at full depth with null window
-            //     //     score = -alpha_beta(b, depth - 1, -alpha - 1, -alpha, ply + 1);
-            //     // }
-            //     // if search fails again
-            //     if (score > alpha && score < beta) {
-            //         // research at full depth with normal window
-            //         score = -alpha_beta(b, depth - 1, -beta, -alpha, ply + 1);
-            //     }
-            // } else {
-            //     // search this move with the full a/b-window
             score = -alpha_beta(b, depth - 1, -beta, -alpha, ply + 1);
-            //}
 
             // unmake the move on the board
             b->unmake_move();
@@ -625,6 +590,7 @@ generate:
                     killers[1][ply] = killers[0][ply];
                     killers[0][ply] = m;
                 }
+                // if the node is a PV-node, store the score in the transposition table
                 tt.set(b->zobrist_key, depth, ply, score, tt_entry::LOWER_BOUND, m);
                 return score;
             }
@@ -650,7 +616,9 @@ generate:
     } else if (num_legal == 0) {
         best_score = 0;
     }
-    tt.set(b->zobrist_key, depth, ply, best_score, flag, best_move);
+    if (pv) {
+        tt.set(b->zobrist_key, depth, ply, best_score, flag, best_move);
+    }
     return best_score;
 }
 

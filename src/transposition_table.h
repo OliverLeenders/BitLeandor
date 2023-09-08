@@ -17,6 +17,18 @@ class transposition_table {
     static uint64_t en_passant_keys[8];
     static uint64_t side_key;
     void set(uint64_t key, int depth, int ply, int eval, int flag, bit_move move);
+    /**
+     * @brief Attempts to retrieve the score of a position from the transposition table. If the
+     * position is not found, returns VAL_UNKNOWN.
+     *
+     * @param key zobrist key of the position
+     * @param depth depth of the search from the position
+     * @param ply ply from root
+     * @param alpha alpha
+     * @param beta beta
+     * @param m pointer to the move to be returned
+     * @return int score of the position
+     */
     int probe(uint64_t key, int depth, int ply, int alpha, int beta, bit_move *m);
     int probe_qsearch(uint64_t key, int ply, int alpha, int beta, bit_move *m);
     ~transposition_table();

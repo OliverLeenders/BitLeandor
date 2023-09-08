@@ -82,9 +82,9 @@ int transposition_table::probe(uint64_t key, int depth, int ply, int alpha, int 
         }
         // std::cout << "Hash move: " << bit_move::to_string(pos_hash_entry->hash_move) <<
         // std::endl;
+    } else {
+        return VAL_UNKNOWN;
     }
-
-    return VAL_UNKNOWN;
 }
 
 int transposition_table::probe_qsearch(uint64_t key, int ply, int alpha, int beta, bit_move *m) {

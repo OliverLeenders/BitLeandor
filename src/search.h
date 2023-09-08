@@ -141,13 +141,13 @@ class search {
     static int quiescence(bitboard *b, int alpha, int beta, int ply);
 
     /**
-     * \brief Updates the PV table.
+     * @brief Updates the PV table.
      *
      * The PV table is updated by copying the PV from the previous iteration
      * and adding the new move to the beginning of the PV.
      *
-     * \param m The move to add to the PV
-     * \param ply The current ply
+     * @param m The move to add to the PV
+     * @param ply The current ply
      */
     static void update_PV(bit_move *m, int depth);
 

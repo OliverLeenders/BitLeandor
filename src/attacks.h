@@ -29,8 +29,8 @@ class attacks {
     static uint64_t compute_rook_attacks(int square, uint64_t blockers);
     static uint64_t compute_bishop_attacks(int square, uint64_t blockers);
     static void init_bishop_attack_masks();
-    static const int num_relevant_bits_rook[64];
-    static const int num_relevant_bits_bishop[64];
+    static const int64_t num_relevant_bits_rook[64];
+    static const int64_t num_relevant_bits_bishop[64];
 
     /**
      * @brief Get the rook attacks. Works via fixed shift plain magic bitboards.

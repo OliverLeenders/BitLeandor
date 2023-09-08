@@ -174,6 +174,7 @@ void attacks::init_bishop_attack_masks() {
 		int tf = i % 8;
 
 		// mask relevant bishop occupancy bits
+		// this bit is taken from Maksim Korzh's BBC chess engine 
 		for (r = tr + 1, f = tf + 1; r <= 6 && f <= 6; r++, f++) attacks |= (1ULL << (r * 8 + f));
 		for (r = tr - 1, f = tf + 1; r >= 1 && f <= 6; r--, f++) attacks |= (1ULL << (r * 8 + f));
 		for (r = tr + 1, f = tf - 1; r <= 6 && f >= 1; r++, f--) attacks |= (1ULL << (r * 8 + f));
@@ -261,7 +262,7 @@ uint64_t attacks::compute_bishop_attacks(int square, uint64_t blockers) {
 	return pattern;
 }
 
-const int attacks::num_relevant_bits_bishop[64] = {
+const int64_t attacks::num_relevant_bits_bishop[64] = {
 	6, 5, 5, 5, 5, 5, 5, 6,
 	5, 5, 5, 5, 5, 5, 5, 5,
 	5, 5, 7, 7, 7, 7, 5, 5,
@@ -272,7 +273,7 @@ const int attacks::num_relevant_bits_bishop[64] = {
 	6, 5, 5, 5, 5, 5, 5, 6
 };
 
-const int attacks::num_relevant_bits_rook[64] = {
+const int64_t attacks::num_relevant_bits_rook[64] = {
 	12, 11, 11, 11, 11, 11, 11, 12,
 	11, 10, 10, 10, 10, 10, 10, 11,
 	11, 10, 10, 10, 10, 10, 10, 11,
