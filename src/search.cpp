@@ -21,14 +21,14 @@
  * @brief The PV (Principal Variation) table. Indexed by ply (from root of search)
  * and the moves in the PV.
  */
-bit_move search::PV[MAX_PLY][MAX_PV_SIZE] = {};
+bit_move search::PV[MAX_DEPTH][MAX_DEPTH] = {};
 
 /**
  * @brief An array containing for each ply the length of the PV at this ply.
  */
 int search::PV_SIZE[MAX_DEPTH] = {};
 
-bit_move search::killers[2][MAX_PV_SIZE] = {};
+bit_move search::killers[2][MAX_DEPTH] = {};
 int search::history[2][64][64] = {{{0}}};
 
 int search::DEPTH = 0;
@@ -44,7 +44,7 @@ transposition_table search::tt = transposition_table();
 int search::NODES_SEARCHED = 0;
 int search::QNODES_SEARCHED = 0;
 
-int search::lmr[MAX_PV_SIZE][MAX_PV_SIZE] = {{0}};
+int search::lmr[MAX_DEPTH][MAX_DEPTH] = {{0}};
 
 int search::search_iterative_deepening(bitboard *b, int depth, bool quiet) {
     stop_now = false;
@@ -63,19 +63,21 @@ int search::search_iterative_deepening(bitboard *b, int depth, bool quiet) {
     STARTTIME = std::chrono::high_resolution_clock::now();
 
     for (curr_depth = 1; curr_depth <= depth; curr_depth++) {
-        NODES_SEARCHED = 0;    // number of nodes spent in a-b-search
-        QNODES_SEARCHED = 0;   // number of nodes spent in quiescence
-        DEPTH = curr_depth;    // the depth to search to
-        SELDEPTH = curr_depth; // the selective search depth
-        score = 0;             // score of the position
-        int num_fails = 0;     // number of aspiration window fails
+        // clang-format off
+        NODES_SEARCHED   = 0;          // number of nodes spent in a-b-search
+        QNODES_SEARCHED  = 0;          // number of nodes spent in quiescence
+        DEPTH            = curr_depth; // the depth to search to
+        SELDEPTH         = curr_depth; // the selective search depth
+        score            = 0;          // score of the position
+        int num_fails    = 0;          // number of aspiration window fails
         bool valid_score = false;
-
+        // clang-format on
+        
         // if depth == 1, search without aspiration windows
-
         if (curr_depth == 1) {
             score = alpha_beta(b, curr_depth, -MATE, MATE, 0);
             prev_score = score;
+            valid_score = true;
         } else {
             //====================================================================================//
             //
@@ -83,9 +85,10 @@ int search::search_iterative_deepening(bitboard *b, int depth, bool quiet) {
             //
             //====================================================================================//
 
+            valid_score = false;
             // set aspiration window -- narrow at first
-            int prev_alpha = prev_score - 16;
-            int prev_beta = prev_score + 16;
+            int prev_alpha = prev_score - HALF_ASPIRATION_WINDOW;
+            int prev_beta = prev_score + HALF_ASPIRATION_WINDOW;
 
             // search with aspiration window
             score = alpha_beta(b, curr_depth, prev_alpha, prev_beta, 0);
@@ -95,22 +98,28 @@ int search::search_iterative_deepening(bitboard *b, int depth, bool quiet) {
 
             // as long as the score is outside the window, reset PV + bestmove and search again
             while ((score <= prev_alpha || score >= prev_beta) && !stop_now) {
+                std::cout << "ASPIRATION FAIL " << ((score <= prev_alpha) ? "LOW" : "HIGH")
+                          << " => re-searching ..." << std::endl
+                          << score << std::endl;
+                // b->print_board();
 
                 // if the score is too low, decrease alpha => increase aspiration window
-                prev_alpha = (score <= prev_alpha) ? prev_alpha - (16 << num_fails) : prev_alpha;
+                prev_alpha = (score <= prev_alpha)
+                                 ? prev_alpha - (HALF_ASPIRATION_WINDOW << num_fails)
+                                 : prev_alpha;
                 // if the score is too high, increase beta => increase aspiration window
-                prev_beta = (score >= prev_beta) ? prev_beta + (16 << num_fails) : prev_beta;
+                prev_beta = (score >= prev_beta) ? prev_beta + (HALF_ASPIRATION_WINDOW << num_fails)
+                                                 : prev_beta;
                 // research
                 score = alpha_beta(b, curr_depth, prev_alpha, prev_beta, 0);
                 num_fails++;
             }
             // if we abort due to time (or quit) we should only use the score if it lies inside the
             // aspiration window, since it would need to be re-searched otherwise
-            if (score > prev_alpha && score < prev_beta) {
+            if (score > prev_alpha && score < prev_beta && !stop_now) {
                 prev_score = score;
                 valid_score = true;
             }
-
         }
 
         //========================================================================================//
@@ -129,7 +138,7 @@ int search::search_iterative_deepening(bitboard *b, int depth, bool quiet) {
                       << " multipv 1";               // hardcoded multipv value (not supported)
 
             // if
-            if (std::abs(score) < MATE - MAX_PV_SIZE - 1) {
+            if (std::abs(score) < MATE - MAX_DEPTH - 1) {
                 // print cp score
                 std::cout << " score cp " << score << " ";
             } else {
@@ -166,8 +175,9 @@ int search::search_iterative_deepening(bitboard *b, int depth, bool quiet) {
             //
             //====================================================================================//
 
-            gather_and_print_pv(b, score, curr_depth);
-
+            if (valid_score) {
+                gather_and_print_pv(b, score, curr_depth);
+            }
             // end the line
             std::cout << std::endl;
         }
@@ -290,16 +300,18 @@ void search::gather_and_print_pv(bitboard *b, int score, int curr_depth) {
             }
             // record PV in transposition table
             // if score is NOT mate score
-            if (std::abs(score) < 90000) {
-                tt.set(b->zobrist_key, curr_depth - pv_index, pv_index,
-                       (b->side_to_move == root_side) ? score : -score, tt_entry::EXACT, m);
-            }
-            // if score is mate score, scores need to reflect distance to mate as they are stored in
-            // the transposition table
-            else {
-                tt.set(b->zobrist_key, curr_depth - pv_index, pv_index,
-                       (b->side_to_move == root_side) ? MATE : -MATE, tt_entry::EXACT, m);
-            }
+            // if (std::abs(score) < MATE - 256) {
+            //    tt.set(b->zobrist_key, 0, pv_index, (b->side_to_move == root_side) ? score :
+            //    -score,
+            //           tt_entry::EXACT, m);
+            //}
+            //// if score is mate score, scores need to reflect distance to mate as they are stored
+            /// in / the transposition table (maybe not necessarily)
+            // else {
+            //     tt.set(b->zobrist_key, 0, pv_index, (b->side_to_move == root_side) ? MATE :
+            //     -MATE,
+            //            tt_entry::EXACT, m);
+            // }
             b->make_move(&m);
             std::cout << bit_move::to_string(search::PV[0][pv_index]) << " ";
         }
@@ -319,8 +331,8 @@ void search::gather_and_print_pv(bitboard *b, int score, int curr_depth) {
  * The LMR table is indexed by depth first and move_number second.
  */
 void search::init_lmr() {
-    for (int d = 0; d < MAX_PLY; d++) {
-        for (int m = 0; m < MAX_PLY; m++) {
+    for (int d = 0; d < MAX_DEPTH; d++) {
+        for (int m = 0; m < MAX_DEPTH; m++) {
             lmr[d][m] = (int)(1.25 + log(d) * log(m) * 100 / 267);
         }
     }
@@ -427,16 +439,7 @@ int search::alpha_beta(bitboard *b, int depth, int alpha, int beta, int ply) {
     bit_move best_move = bit_move();
     bit_move hash_move = bit_move();
 
-    int hash_score = tt.probe(b->zobrist_key, depth, ply, alpha, beta, &hash_move);
-
-    bit_move non_generated_move = hash_move;
-
-    // if we got a hit in the TT and we are neither at root nor find a score inside the a-b-window
-    // (important for avoiding pv-shortening), we can return the score found
-    if (hash_score != tt_entry::VAL_UNKNOWN && ply != 0 /*&& zero_window*/ &&
-        (hash_score <= alpha || hash_score >= beta)) {
-        // return hash_score;
-    }
+    bit_move non_generated_move = bit_move();
 
     int static_eval = evaluator::eval(b);
 
@@ -479,136 +482,61 @@ int search::alpha_beta(bitboard *b, int depth, int alpha, int beta, int ply) {
     //
     //============================================================================================//
 
-    // if (depth > 2 && !is_check && !has_only_pawns /*&& zero_window*/ && !post_null_move &&
-    //     static_eval >= beta) {
-    //     b->make_null_move();
-    //     // run a zero window search with reduced depth
-    //     int null_score = -alpha_beta(b, depth - 2 - 1, -beta, -beta + 1, ply + 1);
-    //     b->unmake_null_move();
-    //     if (null_score >= beta) {
-    //         return beta;
-    //     }
-    // }
-
-    //============================================================================================//
-    //
-    // Staged Move Generation
-    //
-    //  Move ordering is as follows:
-    //      1. Hash-Move
-    //      2. Captures        (MVD-LVA)
-    //      3. 2 Killer Moves
-    //      4. Quiet Moves     (History Heuristic)
-    //
-    //============================================================================================//
-
-    uint8_t step = 0;
-    uint8_t num_quiets = 0;
-    bool generate_quiets = false;
-
-non_generated_moves:
-    // if a hash move has been found or the non_generated_move is a killer move
-    if (hash_score != transposition_table::VAL_UNKNOWN || step > 0) {
-        if (b->is_legal<false>(&non_generated_move)) {
-            num_legal++;
-            num_quiets += non_generated_move.get_flags() < bit_move::capture;
-
-            b->make_move(&non_generated_move);
-            NODES_SEARCHED++;
-
-            int score = -alpha_beta(b, depth - 1, -beta, -alpha, ply + 1);
-            b->unmake_move();
-            if (score >= beta) {
-                tt.set(b->zobrist_key, depth, ply, beta, tt_entry::LOWER_BOUND, non_generated_move);
-                return score;
-            }
-            if (score > alpha) {
-                alpha = score;
-                update_PV(&non_generated_move, ply);
-            }
-            if (score > best_score) {
-                best_score = score;
-                flag = tt_entry::EXACT;
-                best_move = non_generated_move;
-            }
+    if (depth > 2 && !is_check && !has_only_pawns /*&& zero_window*/ && !post_null_move &&
+        static_eval >= beta) {
+        movegen::init_movegen(bit_move(), ply, side_to_move, movegen::HASH_MOVE);
+        b->make_null_move();
+        // run a zero window search with reduced depth
+        int null_score = -alpha_beta(b, depth - 2 - 1, -beta, -beta + 1, ply + 1);
+        b->unmake_null_move();
+        movegen::reset_movegen(ply - 1, !side_to_move);
+        if (null_score >= beta) {
+            return beta;
         }
     }
 
-generate:
-    // if we have already searched all non-generated moves, generate captures and later quiet moves
-    if (generate_quiets && step < 2) {
-        non_generated_move = killers[step][ply];
-        step++;
-        goto non_generated_moves;
-    }
+    bit_move m = bit_move();
 
-    moves[ply].size = 0;
+    movegen::init_movegen(hash_move, ply, side_to_move, movegen::HASH_MOVE);
 
-    if (!generate_quiets) {
-        movegen::generate_all_captures(b, &moves[ply]);
-        if (moves->size == 0) {
-            generate_quiets = true;
-            goto generate;
+    while (movegen::provide_next_move(b, &m)) {
+        num_legal++;
+        uint8_t move_flags = m.get_flags();
+        bool is_quiet_move = move_flags < bit_move::capture;
+
+        b->make_move(&m);
+        NODES_SEARCHED++;
+        int score;
+
+        score = -alpha_beta(b, depth - 1, -beta, -alpha, ply + 1);
+
+        // unmake the move on the board
+        b->unmake_move();
+        // evaluate the result of the search after the move
+        if (score >= beta) {
+            if (m.get_flags() < bit_move::capture) {
+                movegen::history[side_to_move][m.get_origin()][m.get_target()] += ply * ply;
+
+                movegen::killers[1][ply] = movegen::killers[0][ply];
+                movegen::killers[0][ply] = m;
+            }
+            // if the node is a PV-node, store the score in the transposition table
+            // tt.set(b->zobrist_key, depth, ply, score, tt_entry::LOWER_BOUND, m);
+            movegen::reset_movegen(ply - 1, !side_to_move);
+            return score;
         }
-    } else {
-        movegen::generate_all_quiet_moves(b, &moves[ply]);
-    }
-    // score all moves in the movelist so they can be fetched in order later
-    score_moves(&moves[ply], side_to_move);
-    for (int i = 0; i < moves[ply].size; i++) {
-        fetch_next_move(&moves[ply], i);
-
-        bit_move m = moves[ply].moves[i].m;
-        if (m.move == hash_move.move || m.move == killers[0][ply].move ||
-            m.move == killers[1][ply].move) {
-            continue;
+        if (score > best_score) {
+            best_score = score;
+            best_move = m;
+            flag = tt_entry::EXACT;
         }
-
-        if (b->is_legal<true>(&m)) {
-            num_legal++;
-            uint8_t move_flags = m.get_flags();
-            bool is_quiet_move = move_flags < bit_move::capture;
-            num_quiets += is_quiet_move;
-            if (is_quiet_move && !is_check && zero_window) {
-                // some pruning can go here
-                num_quiets++;
-            }
-            LMR = 0 + (is_quiet_move && (num_legal > 1)) * (lmr[depth - 1][num_legal]);
-            b->make_move(&m);
-            NODES_SEARCHED++;
-            int score;
-
-            score = -alpha_beta(b, depth - 1, -beta, -alpha, ply + 1);
-
-            // unmake the move on the board
-            b->unmake_move();
-            // evaluate the result of the search after the move
-            if (score >= beta) {
-                if (m.get_flags() < bit_move::capture) {
-                    history[b->side_to_move][m.get_origin()][m.get_target()] += ply * ply;
-
-                    killers[1][ply] = killers[0][ply];
-                    killers[0][ply] = m;
-                }
-                // if the node is a PV-node, store the score in the transposition table
-                tt.set(b->zobrist_key, depth, ply, score, tt_entry::LOWER_BOUND, m);
-                return score;
-            }
-            if (score > best_score) {
-                best_score = score;
-                best_move = m;
-                flag = tt_entry::EXACT;
-            }
-            if (score > alpha) {
-                alpha = score;
-                update_PV(&m, ply);
-            }
+        if (score > alpha) {
+            alpha = score;
+            update_PV(&m, ply);
         }
     }
-    if (!generate_quiets) {
-        generate_quiets = true;
-        goto generate;
-    }
+
+    movegen::reset_movegen(ply - 1, !side_to_move);
 
     if (num_legal == 0 && is_check) {
         best_score = -MATE + ply;
@@ -616,26 +544,28 @@ generate:
     } else if (num_legal == 0) {
         best_score = 0;
     }
-    if (pv) {
-        tt.set(b->zobrist_key, depth, ply, best_score, flag, best_move);
-    }
+    tt.set(b->zobrist_key, depth, ply, best_score, flag, best_move);
+    // b->print_board();
+
     return best_score;
 }
 
 void search::update_PV(bit_move *m, int ply) {
-    // the first move of the PV at the current should be the move passed as an argument to this
+    // the first move of the PV at the current ply should be the move passed as an argument to this
     // function.
     PV[ply][0] = *m;
-    // the rest of the moves should be copied from the PV starting at the next ply ...
-    for (int i = 0; i < std::min(PV_SIZE[ply + 1], MAX_PV_SIZE - 1); i++) {
-        PV[ply][i + 1] = PV[ply + 1][i];
+    // the rest of the moves should be copied from the PV starting at the next ply, with all entries
+    // shifted to the right
+    int size = std::min(PV_SIZE[ply + 1], MAX_DEPTH - 1);
+    if (size > 0) {
+        memcpy(&PV[ply][1], &PV[ply + 1][0], size * sizeof(bit_move));
     }
-    // finally, the size of the updated pv should be computed
-    PV_SIZE[ply] = std::min(PV_SIZE[ply + 1] + 1, MAX_PV_SIZE);
+    // finally, the size of the updated PV should be computed
+    PV_SIZE[ply] = size + 1;
 }
 
 void search::clear_PV() {
-    for (int i = 0; i < MAX_PV_SIZE; i++) {
+    for (int i = 0; i < MAX_DEPTH; i++) {
         PV_SIZE[i] = 0;
     }
 }
@@ -660,12 +590,10 @@ void search::print_move_list(movelist *m_l) {
 }
 
 void search::fetch_next_move(movelist *m_l, int index) {
-    // TODO: find bug here, I guess.
-    // defining temp variables to store the move and score
-
     // IDEA: 	* sorted area at the beginning of the array
     // 			* Iterate over array and swap entries such that move with max score is
-    // appended to sorted area
+    //              appended to sorted area
+
     int max_score = m_l->moves[index].score;
     int max_index = index;
     int score;
@@ -685,7 +613,7 @@ void search::fetch_next_move(movelist *m_l, int index) {
 }
 
 void search::clear_killers() {
-    for (int i = 0; i < MAX_PLY; i++) {
+    for (int i = 0; i < MAX_DEPTH; i++) {
         killers[0][i] = bit_move();
         killers[1][i] = bit_move();
     }

@@ -33,6 +33,10 @@ class bit_move {
         queen_capture_promotion
     };
 
+    inline bool operator==(const bit_move &rhs) { return this->move == rhs.move; };
+    inline bool operator!=(const bit_move &rhs) { return this->move != rhs.move; };
+
+    static constexpr uint32_t NULL_MOVE = 0U;
     static std::string to_string(bit_move m);
     ~bit_move();
     static std::string squares_to_string[64];

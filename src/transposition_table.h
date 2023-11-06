@@ -16,6 +16,16 @@ class transposition_table {
     static uint64_t castling_keys[4];
     static uint64_t en_passant_keys[8];
     static uint64_t side_key;
+    /**
+     * @brief Stores an entry in the transposition table. Will always replace existing entries.
+     *
+     * @param key the zobrist-key of the position
+     * @param depth depth of the search from the position
+     * @param ply ply from root
+     * @param eval evaluation of the position
+     * @param flag type of the entry
+     * @param move best move from the position
+     */
     void set(uint64_t key, int depth, int ply, int eval, int flag, bit_move move);
     /**
      * @brief Attempts to retrieve the score of a position from the transposition table. If the

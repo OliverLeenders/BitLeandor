@@ -17,8 +17,8 @@ OUTDIR=Versions
 # get date
 date = $(shell date '+%d%m%Y--%H%M')
 # naming conventions
-NAME="Leandor dev 2.6.1 $(date).exe"
-NAME_PROFILE="Leandor dev 2.6.1 profile.exe"
+NAME="Leandor dev 2.6.2 $(date).exe"
+NAME_PROFILE="Leandor dev 2.6.2 profile.exe"
 
 
 # all source files

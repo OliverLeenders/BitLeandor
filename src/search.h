@@ -28,25 +28,18 @@ class search {
      */
     static std::chrono::time_point<std::chrono::high_resolution_clock> STARTTIME;
 
+    
     /**
-     * @brief The maximum size of the principal variation. (= MAX_DEPTH, MAX_PLY)
-     */
-    static constexpr int MAX_PV_SIZE = 256;
-
-    /**
-     * @brief The maximum depth to search to (= MAX_PV_SIZE, MAX_PLY)
+     * @brief The maximum depth to search to (= MAX_PV_SIZE, MAX_DEPTH)
      */
     static constexpr int MAX_DEPTH = 265;
 
-    /**
-     * @brief The maximum length of any path from some position to the root position of the search.
-     * (= MAX_PV_SIZE, MAX_DEPTH)
-     */
-    static constexpr int MAX_PLY = 256;
+    static constexpr int HALF_ASPIRATION_WINDOW = 64;
+
     static constexpr int CAPTURE_SCORE = 100000;
     static constexpr int KILLER_1_SCORE = 10000;
     static constexpr int KILLER_2_SCORE = 9999;
-    static int lmr[MAX_PV_SIZE][MAX_PV_SIZE];
+    static int lmr[MAX_DEPTH][MAX_DEPTH];
 
     /**
      * @brief the depth (distance from root) to search to
@@ -63,7 +56,7 @@ class search {
     static int history[2][64][64];
 
     // Principal Variation array
-    static bit_move PV[MAX_PLY][MAX_PV_SIZE];
+    static bit_move PV[MAX_DEPTH][MAX_DEPTH];
     static int PV_SIZE[MAX_DEPTH];
     static int prev_pv_size;
 
@@ -85,7 +78,7 @@ class search {
      * @brief The array of movelists, one movelist per possible depth from root (0 - 255).
      */
     static movelist moves[256];
-    static bit_move killers[2][MAX_PV_SIZE];
+    static bit_move killers[2][MAX_DEPTH];
 
     /**
      * @brief The main transposition table. Contains scores of positions previously searched that
@@ -212,7 +205,6 @@ class search {
      * @param score the score determined by the search
      * @param curr_depth the depth of the search at the point of calling this
      */
-
     static void gather_and_print_pv(bitboard *b, int score, int curr_depth);
 
     /**

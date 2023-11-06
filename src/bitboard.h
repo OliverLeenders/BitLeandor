@@ -250,4 +250,5 @@ class bitboard {
     void unmake_null_move();
     uint8_t piece_type_from_index(unsigned long i);
     std::vector<board_state> game_history = {};
+    // std::list<std::pair<std::string, std::string>> last_100_moves = {};
 };

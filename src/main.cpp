@@ -28,8 +28,8 @@ int main(int argc, char *argv[]) {
     std::cout << "Compiled using MSVC" << std::endl;
 #endif // _MSC_VER
 
-    // std::cout << sizeof(std::chrono::time_point<std::chrono::high_resolution_clock>) << std::endl;
-    // initializing attack tables
+    // std::cout << sizeof(std::chrono::time_point<std::chrono::high_resolution_clock>) <<
+    // std::endl; initializing attack tables
     attacks::init_attack_tables();
 
     // generate mafics
@@ -64,8 +64,14 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
+/**
+ * @brief Provides the functionality of the UCI chess interface.
+ *
+ * All searches start here, positions can be set up here and search options can be set.
+ */
 void uci_console() {
-    std::cout << "Leandor " << VERSION << " by Oliver Leenders. Copyright (C) 2021. Ready to receive commands..."
+    std::cout << "Leandor " << VERSION
+              << " by Oliver Leenders. Copyright (C) 2021. Ready to receive commands..."
               << std::endl;
     while (true) {
         std::string line = "";
@@ -120,7 +126,8 @@ void uci_console() {
                     }
                     b.pos_from_epd_line(epd);
                 } else if (split->at(1) == "kiwipete") {
-                    b.pos_from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1");
+                    b.pos_from_fen(
+                        "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1");
                     if (split->size() >= 3) {
                         if (split->at(2) == "moves") {
                             for (size_t i = 3; i < split->size(); i++) {
@@ -143,7 +150,8 @@ void uci_console() {
                     }
                     if (split->at(1) == "movetime") {
                         int time = std::stoi(split->at(2));
-                        search::ENDTIME = std::chrono::high_resolution_clock().now() + std::chrono::milliseconds(time);
+                        search::ENDTIME = std::chrono::high_resolution_clock().now() +
+                                          std::chrono::milliseconds(time);
                         search::search_iterative_deepening(&b, 256, false);
                         search::ENDTIME = {};
                     }
@@ -159,12 +167,13 @@ void uci_console() {
                         } else {
                             time = std::min(w_time, (w_time + 25 * w_inc) / 25);
                         }
-                        search::ENDTIME = std::chrono::high_resolution_clock().now() + std::chrono::milliseconds(time);
+                        search::ENDTIME = std::chrono::high_resolution_clock().now() +
+                                          std::chrono::milliseconds(time);
                         search::search_iterative_deepening(&b, 256, false);
                         search::ENDTIME = {};
                     } else if (split->at(1) == "perft") {
                         int depth = std::stoi(split->at(2));
-                        perft::run_perft_console(&b, depth);
+                        perft::run_perft_staged_console(&b, depth);
                     }
                 } else if (split->size() == 2 && split->at(1) == "infinite") {
                     search::search_iterative_deepening(&b, 256, false);
@@ -200,7 +209,8 @@ void uci_console() {
                 if (split->size() == 2) {
                     std::ifstream file("quiet-labeled.epd");
                     std::cout << "Mean-Square Error: "
-                              << tuner::mean_square_error(std::stod(split->at(1)), 1000000, &file) << std::endl;
+                              << tuner::mean_square_error(std::stod(split->at(1)), 1000000, &file)
+                              << std::endl;
                 }
             } else if (split->at(0) == "eval") {
                 int score = evaluator::eval(&b);
@@ -246,9 +256,11 @@ void bench() {
         {}
     }
 
-    std::cout << "DONE." << std::endl << "Searching each FEN position with depth = 7 ... " << std::endl;
+    std::cout << "DONE." << std::endl
+              << "Searching each FEN position with depth = 7 ... " << std::endl;
     int nodes = 0;
-    std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
+    std::chrono::high_resolution_clock::time_point start =
+        std::chrono::high_resolution_clock::now();
     for (i = 0; i < 1000; i++) {
         if (i % 50 == 0) {
             std::cout << ".";
@@ -276,7 +288,8 @@ bit_move parse_move(std::vector<std::string> *split, int i) {
     bool is_promotion = b.types[origin] == PAWN && (target < 8 || target >= 56);
     bool is_castle_kingside = b.types[origin] == KING && target == origin + 2;
     bool is_castle_queenside = b.types[origin] == KING && target == origin - 2;
-    bool is_double_pawn_push = b.types[origin] == PAWN && (target == origin + 16 || target == origin - 16);
+    bool is_double_pawn_push =
+        b.types[origin] == PAWN && (target == origin + 16 || target == origin - 16);
     uint8_t promotion_type = 0;
     bool is_ep = (1ULL << target) == b.ep_target_square && b.types[origin] == PAWN;
     uint8_t captured_type = b.types[target];

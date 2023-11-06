@@ -45,24 +45,22 @@ void transposition_table::init_keys() {
 
 void transposition_table::set(uint64_t key, int depth, int ply, int score, int flag,
                               bit_move move) {
-    if (std::abs(score) >= MATE - 1000) {
-        // upper bound mate scores are weird and should not be stored according to Bruce Moreland.
-        if (flag == tt_entry::UPPER_BOUND && score > 0 ||
-            flag == tt_entry::LOWER_BOUND && score < 0) {
-            return;
-        } else {
-            flag = tt_entry::LOWER_BOUND;
-            score = utility::sgn(score) * (MATE - 1000);
-        }
-    }
     int index = key % size;
-    // clang-format off
-	table[index].key       = key;
-    table[index].depth     = depth;
-    table[index].score     = score;
-    table[index].type 	   = flag;
+    // if is mate score, adjust score
+    if (score >= MATE - 256) {
+        score += ply;
+    }
+    if (score <= -MATE + 256) {
+        score -= ply;
+    }
+    table[index].score = score;
+    table[index].key = key;
+    table[index].depth = depth;
+    table[index].type = flag;
     table[index].hash_move = move;
-    // clang-format on
+    // std::cout << "set: score " << table[index].score << " key " << table[index].key << " d "
+    //            << (int)table[index].depth << " f " << (int)table[index].type << " m "
+    //           << bit_move::to_string(table[index].hash_move) << "\n";
 }
 
 int transposition_table::probe(uint64_t key, int depth, int ply, int alpha, int beta, bit_move *m) {
@@ -70,21 +68,21 @@ int transposition_table::probe(uint64_t key, int depth, int ply, int alpha, int 
     if (entry.key == key) {
         m->move = entry.hash_move.move;
         if (entry.depth >= depth) {
-            if (entry.type == tt_entry::EXACT) {
-                return entry.score;
-            }
-            if (entry.type == tt_entry::UPPER_BOUND && entry.score <= alpha) {
-                return alpha;
-            }
-            if (entry.type == tt_entry::LOWER_BOUND && entry.score >= beta) {
-                return beta;
+            if (entry.type == tt_entry::EXACT ||
+                (entry.type == tt_entry::UPPER_BOUND && entry.score <= alpha) ||
+                (entry.type == tt_entry::LOWER_BOUND && entry.score >= beta)) {
+                int score = entry.score;
+                // if is mate score, adjust score
+                if (score >= MATE - 256) {
+                    score -= ply;
+                } else if (score <= -MATE + 256) {
+                    score += ply;
+                }
+                return score;
             }
         }
-        // std::cout << "Hash move: " << bit_move::to_string(pos_hash_entry->hash_move) <<
-        // std::endl;
-    } else {
-        return VAL_UNKNOWN;
     }
+    return VAL_UNKNOWN;
 }
 
 int transposition_table::probe_qsearch(uint64_t key, int ply, int alpha, int beta, bit_move *m) {
@@ -100,10 +98,7 @@ int transposition_table::probe_qsearch(uint64_t key, int ply, int alpha, int bet
         if (entry.type == tt_entry::LOWER_BOUND && entry.score >= beta) {
             return beta;
         }
-        // std::cout << "Hash move: " << bit_move::to_string(pos_hash_entry->hash_move) <<
-        // std::endl;
     }
-
     return VAL_UNKNOWN;
 }
 

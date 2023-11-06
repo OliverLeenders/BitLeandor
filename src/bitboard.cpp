@@ -18,7 +18,8 @@ bool bitboard::is_sane() {
         uint8_t type = types[i];
         if (type != EMPTY) {
             if ((bbs[type][WHITE] & (1ULL << i)) == 0 && (bbs[type][BLACK] & (1ULL << i)) == 0) {
-                std::cout << "Type " << ((int)type) << " not in bitboard" << std::endl << i << std::endl;
+                std::cout << "Type " << ((int)type) << " not in bitboard" << std::endl
+                          << i << std::endl;
                 print_board();
                 return false;
             }
@@ -26,7 +27,8 @@ bool bitboard::is_sane() {
         if (piece != EMPTY_PIECE) {
             hash_key ^= transposition_table::piece_keys[piece][i];
             if ((bbs[piece % BLACK_PAWN][piece >= BLACK_PAWN] & (1ULL << i)) == 0) {
-                std::cout << "Piece " << ((int)piece) << " not in bitboard" << std::endl << i << std::endl;
+                std::cout << "Piece " << ((int)piece) << " not in bitboard" << std::endl
+                          << i << std::endl;
                 print_board();
                 return false;
             }
@@ -42,9 +44,10 @@ bool bitboard::is_sane() {
         hash_key ^= transposition_table::side_key;
     }
     if (hash_key != this->zobrist_key) {
-        // std::cout << "hash key mismatch: correct ->" << hash_key << "
-        // incorrect -> " << zobrist_key << std::endl; print_board(); return
-        // false;
+        std::cout << "hash key mismatch: correct ->" << hash_key << " incorrect-> " << zobrist_key
+                  << std::endl;
+        print_board();
+        return false;
     }
     return true;
 }
@@ -138,10 +141,10 @@ void bitboard::pos_from_fen(std::string fen) {
         fen_pos_index++;
     }
 
-    this->occupancy[0] = this->bbs[PAWN][0] | this->bbs[KNIGHT][0] | this->bbs[BISHOP][0] | this->bbs[ROOK][0] |
-                         this->bbs[QUEEN][0] | this->bbs[KING][0];
-    this->occupancy[1] = this->bbs[PAWN][1] | this->bbs[KNIGHT][1] | this->bbs[BISHOP][1] | this->bbs[ROOK][1] |
-                         this->bbs[QUEEN][1] | this->bbs[KING][1];
+    this->occupancy[0] = this->bbs[PAWN][0] | this->bbs[KNIGHT][0] | this->bbs[BISHOP][0] |
+                         this->bbs[ROOK][0] | this->bbs[QUEEN][0] | this->bbs[KING][0];
+    this->occupancy[1] = this->bbs[PAWN][1] | this->bbs[KNIGHT][1] | this->bbs[BISHOP][1] |
+                         this->bbs[ROOK][1] | this->bbs[QUEEN][1] | this->bbs[KING][1];
     this->occupancy[2] = this->occupancy[0] | this->occupancy[1];
 
     std::string fen_side_to_move = fen_split[1];
@@ -182,7 +185,8 @@ void bitboard::pos_from_fen(std::string fen) {
     if (fen_ep_target_square == "-") {
         this->ep_target_square = 0ULL;
     } else {
-        int8_t index = 8 * char_to_rank(fen_ep_target_square.at(1)) + char_to_file(fen_ep_target_square.at(0));
+        int8_t index =
+            8 * char_to_rank(fen_ep_target_square.at(1)) + char_to_file(fen_ep_target_square.at(0));
         this->ep_target_square = 1ULL << index;
     }
     std::string fen_fifty_move_clock = fen_split[4];
@@ -310,14 +314,34 @@ int bitboard::piece_to_char(uint8_t piece) {
  *
  */
 void bitboard::make_null_move() {
-    bit_move nm = {};
-
-    this->game_history.emplace_back(zobrist_key, pawn_hash_key, ep_target_square, nm, PST_score_MG, PST_score_EG,
-                                    fifty_move_rule_counter, castling_rights);
+    this->game_history.emplace_back(zobrist_key, pawn_hash_key, ep_target_square, bit_move(),
+                                    PST_score_MG, PST_score_EG, fifty_move_rule_counter,
+                                    castling_rights);
     this->side_to_move = !this->side_to_move;
     this->zobrist_key ^= transposition_table::side_key;
     this->fifty_move_rule_counter = 0;
     this->ep_target_square = 0ULL;
+
+    /*std::string indent = "";
+    for (int i = 0; i < this->game_history.size(); i++) {
+        indent += "\t";
+    }
+
+    last_100_moves.push_back(std::pair(indent + "make NULLMOVE" + bit_move::to_string(bit_move()),
+                                       this->pos_to_fen() + std::to_string(this->zobrist_key)));
+    if (last_100_moves.size() > 10) {
+        last_100_moves.pop_front();
+    }
+    if (!is_sane()) {
+        std::cout << "not sane make NULLMOVE" << std::endl;
+        std::cout << "MOVE: " << bit_move::to_string(bit_move()) << std::endl;
+        std::list<std::pair<std::string, std::string>>::iterator iter = last_100_moves.begin();
+        while (iter != last_100_moves.end()) {
+            std::cout << iter->first << " <==> " << iter->second << std::endl;
+            iter++;
+        }
+        std::cout << "ARRIVED ADD CURRENT POSITION." << std::endl;
+    }*/
 }
 /**
  * Undoes a nullmove.
@@ -335,6 +359,26 @@ void bitboard::unmake_null_move() {
     this->PST_score_EG            = bs.PST_score_EG;
     this->ep_target_square        = bs.en_passant_target_square;
     // clang-format on
+    /*std::string indent = "";
+    for (int i = 0; i <= this->game_history.size(); i++) {
+        indent += "\t";
+    }
+    last_100_moves.push_back(std::pair(indent + "UNmake NULLMOVE" + bit_move::to_string(bit_move()),
+                                       this->pos_to_fen() + std::to_string(this->zobrist_key)));
+    if (last_100_moves.size() > 10) {
+        last_100_moves.pop_front();
+    }
+
+    if (!is_sane()) {
+        std::cout << "not sane unmake NULLMOVE" << std::endl;
+        std::cout << "MOVE: " << bit_move::to_string(bit_move()) << std::endl;
+        std::list<std::pair<std::string, std::string>>::iterator iter = last_100_moves.begin();
+        while (iter != last_100_moves.end()) {
+            std::cout << iter->first << " <==> " << iter->second << std::endl;
+            iter++;
+        }
+        std::cout << "ARRIVED ADD CURRENT POSITION." << std::endl;
+    }*/
 }
 
 /**
@@ -392,7 +436,7 @@ void bitboard::print_board() {
     }
     uint64_t w_rooks = this->bbs[ROOK][WHITE];
     while (w_rooks != 0ULL) {
-        index =  BitScanForward64(w_rooks);
+        index = BitScanForward64(w_rooks);
         pieces_str[index] = "R";
         w_rooks &= w_rooks - 1;
     }
@@ -477,6 +521,7 @@ void bitboard::make_move(bit_move *m) {
                               fifty_move_rule_counter, // 50 move counter for restoration
                               castling_rights);        // castling rights char
     // extract move details
+
     // clang-format off
     const uint8_t origin        = m->get_origin();
     const uint8_t target        = m->get_target();
@@ -534,7 +579,6 @@ void bitboard::make_move(bit_move *m) {
             } else {
                 place_piece<true, true>(flags - 7 + (!side_to_move) * BLACK_PAWN, target);
             }
-
             return;
         } else if (flags == bit_move::ep_capture) {
             side_to_move = 1 - side_to_move;
@@ -588,6 +632,28 @@ void bitboard::make_move(bit_move *m) {
     } else {
         place_piece<true, true>(piece, target);
     }
+
+//sanity:
+//    std::string indent = "";
+//    for (int i = 0; i < this->game_history.size(); i++) {
+//        indent += "\t";
+//    }
+//    last_100_moves.push_back(std::pair(indent + "make " + bit_move::to_string(*m),
+//                                       this->pos_to_fen() + " " + std::to_string(line_num)));
+//    if (last_100_moves.size() > 10) {
+//        last_100_moves.pop_front();
+//    }
+//
+//    if (!is_sane()) {
+//        std::cout << "not sane make" << std::endl;
+//        std::cout << "MOVE: " << bit_move::to_string(*m) << std::endl;
+//        std::list<std::pair<std::string, std::string>>::iterator iter = last_100_moves.begin();
+//        while (iter != last_100_moves.end()) {
+//            std::cout << iter->first << " <==> " << iter->second << std::endl;
+//            iter++;
+//        }
+//        std::cout << "ARRIVED ADD CURRENT POSITION." << std::endl;
+//    }
 }
 
 void bitboard::unmake_move() {
@@ -598,30 +664,30 @@ void bitboard::unmake_move() {
 
     // restore previous board state
     // clang-format off
-    side_to_move            = !side_to_move;
-    full_move_clock        -= side_to_move;
-    fifty_move_rule_counter = prev_board_state.fifty_move_counter;
-    ep_target_square        = prev_board_state.en_passant_target_square;
-    zobrist_key             = prev_board_state.z_hash;
-    pawn_hash_key           = prev_board_state.p_hash;
-    castling_rights         = prev_board_state.castling_rights;
-    PST_score_MG            = prev_board_state.PST_score_MG;
-    PST_score_EG            = prev_board_state.PST_score_EG;
-    // clang-format on
+    side_to_move                = !side_to_move;
+    full_move_clock            -= side_to_move;
+    fifty_move_rule_counter     = prev_board_state.fifty_move_counter;
+    ep_target_square            = prev_board_state.en_passant_target_square;
+    zobrist_key                 = prev_board_state.z_hash;
+    pawn_hash_key               = prev_board_state.p_hash;
+    castling_rights             = prev_board_state.castling_rights;
+    PST_score_MG                = prev_board_state.PST_score_MG;
+    PST_score_EG                = prev_board_state.PST_score_EG;
 
-    bit_move prev_move = prev_board_state.last_move;
+    bit_move prev_move          = prev_board_state.last_move;
     // declare useful const variables
-    const uint8_t origin = prev_move.get_origin();
-    const uint8_t target = prev_move.get_target();
-    const uint8_t piece_type = prev_move.get_piece_type();
+    const uint8_t origin        = prev_move.get_origin();
+    const uint8_t target        = prev_move.get_target();
+    const uint8_t piece_type    = prev_move.get_piece_type();
     const uint8_t captured_type = prev_move.get_captured_type();
     // flags indicating move type (castling, ep, promotion, captures ...)
-    const uint8_t flags = prev_move.get_flags();
-    const uint8_t factor = (side_to_move == WHITE) ? 1 : -1;
-    const uint8_t piece = piece_type + (side_to_move)*BLACK_PAWN;
+    const uint8_t flags         = prev_move.get_flags();
+    const uint8_t factor        = (side_to_move == WHITE) ? 1 : -1;
+    const uint8_t piece         = piece_type + side_to_move * BLACK_PAWN;
 
-    const bool is_capture = captured_type != EMPTY;
-    const bool is_ep = flags == bit_move::ep_capture;
+    const bool is_capture       = captured_type != EMPTY;
+    const bool is_ep            = flags == bit_move::ep_capture;
+    // clang-format on
 
     if (piece_type == KING) {
         king_positions[side_to_move] = origin;
@@ -647,9 +713,42 @@ void bitboard::unmake_move() {
     }
 
     place_piece<false, false>(piece, origin);
+
+    //std::string indent = "";
+    //for (int i = 0; i <= this->game_history.size(); i++) {
+    //    indent += "\t";
+    //}
+
+    //if (this->last_100_moves.back().first == indent + "UNmake " + bit_move::to_string(prev_move)) {
+    //    std::cout << "break" << std::endl;
+    //    std::cout << "MOVE: " << bit_move::to_string(prev_move) << std::endl;
+    //    std::list<std::pair<std::string, std::string>>::iterator iter = last_100_moves.begin();
+    //    while (iter != last_100_moves.end()) {
+    //        std::cout << iter->first << " <==> " << iter->second << std::endl;
+    //        iter++;
+    //    }
+    //    std::cout << "ARRIVED ADD CURRENT POSITION." << std::endl;
+    //}
+    //this->last_100_moves.push_back(std::pair(indent + "UNmake " + bit_move::to_string(prev_move),
+    //                                         this->pos_to_fen() + " " + std::to_string(line_num)));
+    //if (this->last_100_moves.size() > 10) {
+    //    this->last_100_moves.pop_front();
+    //}
+
+    //if (!is_sane()) {
+    //    std::cout << "not sane unmake" << std::endl;
+    //    std::cout << "MOVE: " << bit_move::to_string(prev_move) << std::endl;
+    //    std::list<std::pair<std::string, std::string>>::iterator iter = last_100_moves.begin();
+    //    while (iter != last_100_moves.end()) {
+    //        std::cout << iter->first << " <==> " << iter->second << std::endl;
+    //        iter++;
+    //    }
+    //    std::cout << "ARRIVED ADD CURRENT POSITION." << std::endl;
+    //}
 }
 
-template <bool update_zobrist, bool update_score> void bitboard::place_piece(uint8_t piece, uint8_t target) {
+template <bool update_zobrist, bool update_score>
+void bitboard::place_piece(uint8_t piece, uint8_t target) {
     //
     const uint8_t type = piece % BLACK_PAWN;
     const bool color = piece >= BLACK_PAWN;
@@ -673,10 +772,10 @@ template <bool update_zobrist, bool update_score> void bitboard::place_piece(uin
         }
     }
     if (update_score) {
-        this->PST_score_MG +=
-            weights::piece_values[MIDGAME][piece] + weights::piece_square_tables[MIDGAME][piece][target];
-        this->PST_score_EG +=
-            weights::piece_values[ENDGAME][piece] + weights::piece_square_tables[ENDGAME][piece][target];
+        this->PST_score_MG += weights::piece_values[MIDGAME][piece] +
+                              weights::piece_square_tables[MIDGAME][piece][target];
+        this->PST_score_EG += weights::piece_values[ENDGAME][piece] +
+                              weights::piece_square_tables[ENDGAME][piece][target];
     }
 }
 
@@ -705,10 +804,10 @@ template <bool update_zobrist, bool update_score> void bitboard::unset_piece(uin
         }
     }
     if (update_score) {
-        this->PST_score_MG -=
-            weights::piece_values[MIDGAME][piece] + weights::piece_square_tables[MIDGAME][piece][target];
-        this->PST_score_EG -=
-            weights::piece_values[ENDGAME][piece] + weights::piece_square_tables[ENDGAME][piece][target];
+        this->PST_score_MG -= weights::piece_values[MIDGAME][piece] +
+                              weights::piece_square_tables[MIDGAME][piece][target];
+        this->PST_score_EG -= weights::piece_values[ENDGAME][piece] +
+                              weights::piece_square_tables[ENDGAME][piece][target];
     }
 }
 
@@ -718,7 +817,8 @@ template <bool update_zobrist, bool update_score> void bitboard::unset_piece(uin
  * @param piece piece to place
  * @param target target square (any piece is removed from this square first)
  */
-template <bool update_zobrist, bool update_score> void bitboard::replace_piece(uint8_t piece, uint8_t target) {
+template <bool update_zobrist, bool update_score>
+void bitboard::replace_piece(uint8_t piece, uint8_t target) {
     unset_piece<update_zobrist, update_score>(target);
     place_piece<update_zobrist, update_score>(piece, target);
 }
