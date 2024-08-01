@@ -72,7 +72,7 @@ int search::search_iterative_deepening(bitboard *b, int depth, bool quiet) {
         int num_fails    = 0;          // number of aspiration window fails
         bool valid_score = false;
         // clang-format on
-        
+
         // if depth == 1, search without aspiration windows
         if (curr_depth == 1) {
             score = alpha_beta(b, curr_depth, -MATE, MATE, 0);
@@ -98,10 +98,9 @@ int search::search_iterative_deepening(bitboard *b, int depth, bool quiet) {
 
             // as long as the score is outside the window, reset PV + bestmove and search again
             while ((score <= prev_alpha || score >= prev_beta) && !stop_now) {
-                std::cout << "ASPIRATION FAIL " << ((score <= prev_alpha) ? "LOW" : "HIGH")
-                          << " => re-searching ..." << std::endl
-                          << score << std::endl;
-                // b->print_board();
+                // std::cout << "ASPIRATION FAIL " << ((score <= prev_alpha) ? "LOW" : "HIGH")
+                //           << " => re-searching ..." << std::endl
+                //           << score << std::endl;
 
                 // if the score is too low, decrease alpha => increase aspiration window
                 prev_alpha = (score <= prev_alpha)
@@ -143,8 +142,16 @@ int search::search_iterative_deepening(bitboard *b, int depth, bool quiet) {
                 std::cout << " score cp " << score << " ";
             } else {
                 // print mate score
-                std::cout << " score mate "
-                          << utility::sgn(score) * (MATE - std::abs(score) + 1) / 2 << " ";
+                // if the search is complete, the score is valid (no lower/upper bound)
+                if (valid_score) {
+                    std::cout << " score mate "
+                              << utility::sgn(score) * (MATE - std::abs(score) + 1) / 2 << " ";
+                } else {
+                    // score is bound and needs to be treated as such
+                    std::cout << " score mate "
+                              << utility::sgn(prev_score) * (MATE - std::abs(prev_score) + 1) / 2
+                              << " ";
+                }
             }
 
             //====================================================================================//
@@ -194,90 +201,6 @@ int search::search_iterative_deepening(bitboard *b, int depth, bool quiet) {
         std::cout << "bestmove " << bit_move::to_string(best_move) << std::endl;
     }
     return TOTAL_NODES;
-}
-
-int search::quiescence(bitboard *b, int alpha, int beta, int ply) {
-    uint8_t king_pos = b->king_positions[b->side_to_move];
-
-    // check if we are in check or not
-    bool is_check = b->is_square_attacked(king_pos, !b->side_to_move);
-    int static_eval;
-
-    // if is in check, static eval should be mate score
-    if (is_check) {
-        static_eval = -MATE;
-    } else {
-        static_eval = evaluator::eval(b);
-    }
-
-    // if static eval is greater than beta, return beta
-    // this assumes that the side to move can does not have to capture or evade multiple attacks.
-    if (!is_check && static_eval >= beta) {
-        return beta;
-    }
-
-    if (static_eval > alpha) {
-        alpha = static_eval;
-    }
-
-    int num_legal = 0;
-    moves[ply].size = 0;
-    if (is_check) {
-        movegen::generate_all_pseudo_legal_moves(b, &moves[ply]);
-    } else {
-        movegen::generate_all_captures(b, &moves[ply]);
-    }
-
-    bit_move best_move = bit_move();
-
-    int size = moves[ply].size;
-    score_moves(&moves[ply], b->side_to_move);
-    for (int i = 0; i < size; i++) {
-        fetch_next_move(&moves[ply], i);
-        bit_move m = moves[ply].moves[i].m;
-        if (b->is_legal<true>(&m)) {
-            num_legal++;
-            int delta = alpha - static_eval - 250;
-
-            //====================================================================================//
-            //
-            // delta pruning
-            //
-            //====================================================================================//
-
-            // if (!is_check             // do not prune if in check
-            //     && m.get_flags() >= 4 // if move is capture or promotion
-            //     && weights::piece_values[0][b->types[m.get_target()]] < delta) { // delta pruning
-            //     continue;
-            // }
-
-            //====================================================================================//
-
-            b->make_move(&m);
-            NODES_SEARCHED++;
-            QNODES_SEARCHED++;
-
-            int score = -quiescence(b, -beta, -alpha, ply + 1);
-
-            b->unmake_move();
-
-            if (score >= beta) {
-                // tt.set(b->zobrist_key, 0, ply, score, tt_entry::LOWER_BOUND, m);
-                return score;
-            }
-
-            if (score > alpha) {
-                alpha = score;
-                // flag = tt_entry::EXACT;
-                best_move = m;
-            }
-        }
-    }
-    if (is_check && num_legal == 0) {
-        return -MATE + ply;
-    }
-    // tt.set(b->zobrist_key, 0, ply, alpha, flag, best_move);
-    return alpha;
 }
 
 void search::gather_and_print_pv(bitboard *b, int score, int curr_depth) {
@@ -432,12 +355,37 @@ int search::alpha_beta(bitboard *b, int depth, int alpha, int beta, int ply) {
 
     //============================================================================================//
     //
+    // mate dist pruning
+    //
+    //============================================================================================//
+
+    int mating_value = MATE - ply;
+    if (mating_value < beta) {
+        beta = mating_value;
+        if (alpha >= mating_value) {
+            return mating_value;
+        }
+    }
+
+    mating_value = -MATE + ply;
+
+    if (mating_value > alpha) {
+        alpha = mating_value;
+        if (beta <= mating_value) {
+            return mating_value;
+        }
+    }
+
+    //============================================================================================//
+    //
     // probe transposition table
     //
     //============================================================================================//
 
     bit_move best_move = bit_move();
     bit_move hash_move = bit_move();
+
+    int tt_score = tt.probe(b->zobrist_key, depth, ply, alpha, beta, &hash_move);
 
     bit_move non_generated_move = bit_move();
 
@@ -449,31 +397,6 @@ int search::alpha_beta(bitboard *b, int depth, int alpha, int beta, int ply) {
 
     //============================================================================================//
     //
-    // mate dist pruning
-    //
-    //============================================================================================//
-
-    {
-        int mating_value = MATE - ply;
-        if (mating_value < beta) {
-            beta = mating_value;
-            if (alpha >= mating_value) {
-                return mating_value;
-            }
-        }
-
-        mating_value = -MATE + ply;
-
-        if (mating_value > alpha) {
-            alpha = mating_value;
-            if (beta <= mating_value) {
-                return mating_value;
-            }
-        }
-    }
-
-    //============================================================================================//
-    //
     // Null Move Pruning:
     //
     // IDEA: Pass move to the opponent and search with reduced depth. If the returned score still
@@ -482,7 +405,7 @@ int search::alpha_beta(bitboard *b, int depth, int alpha, int beta, int ply) {
     //
     //============================================================================================//
 
-    if (depth > 2 && !is_check && !has_only_pawns /*&& zero_window*/ && !post_null_move &&
+    if (depth > 2 && !is_check && !has_only_pawns && zero_window && !post_null_move &&
         static_eval >= beta) {
         movegen::init_movegen(bit_move(), ply, side_to_move, movegen::HASH_MOVE);
         b->make_null_move();
@@ -495,6 +418,7 @@ int search::alpha_beta(bitboard *b, int depth, int alpha, int beta, int ply) {
         }
     }
 
+    // `move` object to hold generated moves.
     bit_move m = bit_move();
 
     movegen::init_movegen(hash_move, ply, side_to_move, movegen::HASH_MOVE);
@@ -508,11 +432,23 @@ int search::alpha_beta(bitboard *b, int depth, int alpha, int beta, int ply) {
         NODES_SEARCHED++;
         int score;
 
-        score = -alpha_beta(b, depth - 1, -beta, -alpha, ply + 1);
-
+        // TODO: FIND BUG
+        if (num_legal <= 1) {
+            score = -alpha_beta(b, depth - 1, -beta, -alpha, ply + 1);
+        } else {
+            // zero window search
+            score = -alpha_beta(b, depth -1, -(alpha + 1), -alpha, ply + 1);
+            if (score > alpha && score < beta) {
+                score = -alpha_beta(b, depth - 1, -beta, -alpha, ply + 1);
+            }
+        }
         // unmake the move on the board
         b->unmake_move();
         // evaluate the result of the search after the move
+
+        //========================================================================================//
+        // BETA-CUTOFF
+        //========================================================================================//
         if (score >= beta) {
             if (m.get_flags() < bit_move::capture) {
                 movegen::history[side_to_move][m.get_origin()][m.get_target()] += ply * ply;
@@ -525,14 +461,22 @@ int search::alpha_beta(bitboard *b, int depth, int alpha, int beta, int ply) {
             movegen::reset_movegen(ply - 1, !side_to_move);
             return score;
         }
+        //========================================================================================//
+        // search found a lower bound
+        //========================================================================================//
         if (score > best_score) {
             best_score = score;
             best_move = m;
             flag = tt_entry::EXACT;
         }
+        //========================================================================================//
+        // search raises alpha
+        //========================================================================================//
         if (score > alpha) {
             alpha = score;
-            update_PV(&m, ply);
+            if (!zero_window) {
+                update_PV(&m, ply);
+            }
         }
     }
 
@@ -548,6 +492,90 @@ int search::alpha_beta(bitboard *b, int depth, int alpha, int beta, int ply) {
     // b->print_board();
 
     return best_score;
+}
+
+int search::quiescence(bitboard *b, int alpha, int beta, int ply) {
+    uint8_t king_pos = b->king_positions[b->side_to_move];
+
+    // check if we are in check or not
+    bool is_check = b->is_square_attacked(king_pos, !b->side_to_move);
+    int static_eval;
+
+    // if is in check, static eval should be mate score
+    if (is_check) {
+        static_eval = -MATE;
+    } else {
+        static_eval = evaluator::eval(b);
+    }
+
+    // if static eval is greater than beta, return beta
+    // this assumes that the side to move can does not have to capture or evade multiple attacks.
+    if (!is_check && static_eval >= beta) {
+        return beta;
+    }
+
+    if (static_eval > alpha) {
+        alpha = static_eval;
+    }
+
+    int num_legal = 0;
+    moves[ply].size = 0;
+    if (is_check) {
+        movegen::generate_all_pseudo_legal_moves(b, &moves[ply]);
+    } else {
+        movegen::generate_all_captures(b, &moves[ply]);
+    }
+
+    // bit_move best_move = bit_move();
+
+    int size = moves[ply].size;
+    score_moves(&moves[ply], b->side_to_move);
+    for (int i = 0; i < size; i++) {
+        fetch_next_move(&moves[ply], i);
+        bit_move m = moves[ply].moves[i].m;
+        if (b->is_legal<true>(&m)) {
+            num_legal++;
+            int delta = alpha - static_eval - 250;
+
+            //====================================================================================//
+            //
+            // delta pruning
+            //
+            //====================================================================================//
+
+            // if (!is_check             // do not prune if in check
+            //     && m.get_flags() >= 4 // if move is capture or promotion
+            //     && weights::piece_values[0][b->types[m.get_target()]] < delta) { // delta pruning
+            //     continue;
+            // }
+
+            //====================================================================================//
+
+            b->make_move(&m);
+            NODES_SEARCHED++;
+            QNODES_SEARCHED++;
+
+            int score = -quiescence(b, -beta, -alpha, ply + 1);
+
+            b->unmake_move();
+
+            if (score >= beta) {
+                // tt.set(b->zobrist_key, 0, ply, score, tt_entry::LOWER_BOUND, m);
+                return score;
+            }
+
+            if (score > alpha) {
+                alpha = score;
+                // flag = tt_entry::EXACT;
+                // best_move = m;
+            }
+        }
+    }
+    if (is_check && num_legal == 0) {
+        return -MATE + ply;
+    }
+    // tt.set(b->zobrist_key, 0, ply, alpha, flag, best_move);
+    return alpha;
 }
 
 void search::update_PV(bit_move *m, int ply) {

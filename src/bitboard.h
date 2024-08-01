@@ -16,7 +16,8 @@ class bitboard {
   public:
     bitboard();
     // piece bitboards
-    uint64_t bbs[6][2] = {{0ULL, 0ULL}, {0ULL, 0ULL}, {0ULL, 0}, {0ULL, 0ULL}, {0ULL, 0ULL}, {0ULL, 0ULL}};
+    uint64_t bbs[6][2] = {{0ULL, 0ULL}, {0ULL, 0ULL}, {0ULL, 0},
+                          {0ULL, 0ULL}, {0ULL, 0ULL}, {0ULL, 0ULL}};
     // occupancy bitboards
     uint64_t occupancy[3] = {0ULL};
 
@@ -132,7 +133,8 @@ class bitboard {
                     return false;
                 }
             } else if (flags == bit_move::double_pawn_push) {
-                if (pieces[target] != EMPTY_PIECE || pieces[target - ((side_to_move) ? -8 : 8)] != EMPTY_PIECE) {
+                if (pieces[target] != EMPTY_PIECE ||
+                    pieces[target - ((side_to_move) ? -8 : 8)] != EMPTY_PIECE) {
                     return false;
                 }
             } else if (flags == bit_move::kingside_castle) {
@@ -160,7 +162,8 @@ class bitboard {
                     return false;
                 }
             }
-            if (types[origin] == KING && flags != bit_move::kingside_castle && flags != bit_move::queenside_castle) {
+            if (types[origin] == KING && flags != bit_move::kingside_castle &&
+                flags != bit_move::queenside_castle) {
                 if ((target_bb & attacks::king_attacks[origin]) == 0ULL) {
                     return false;
                 }
@@ -172,11 +175,13 @@ class bitboard {
                     }
                 } else {
                     if (side_to_move == WHITE) {
-                        if ((target - origin != 16 && origin < 16) && target - origin != 8) {
+                        if (((target - origin != 16 && target - origin != 8) && origin < 16) ||
+                            (origin >= 16 && target - origin != 8)) {
                             return false;
                         }
                     } else {
-                        if ((origin - target != 16 && origin > 47) && origin - target != 8) {
+                        if ((origin - target != 16 && origin - target != 8 && origin > 47) ||
+                            (origin <= 47 && origin - target != 8)) {
                             return false;
                         }
                     }
@@ -198,8 +203,8 @@ class bitboard {
                 }
 
                 if (types[origin] == QUEEN) {
-                    if (((1ULL << target) &
-                         (attacks::diagonal_masks[origin] | attacks::horizontal_vertical_masks[origin])) == 0ULL) {
+                    if (((1ULL << target) & (attacks::diagonal_masks[origin] |
+                                             attacks::horizontal_vertical_masks[origin])) == 0ULL) {
                         return false;
                     }
                 }
@@ -211,12 +216,14 @@ class bitboard {
             }
         }
         if (flags == bit_move::queenside_castle) {
-            if (is_square_attacked(origin, !side_to_move) || is_square_attacked(origin - 1, !side_to_move) ||
+            if (is_square_attacked(origin, !side_to_move) ||
+                is_square_attacked(origin - 1, !side_to_move) ||
                 is_square_attacked(origin - 2, !side_to_move)) {
                 return false;
             }
         } else if (flags == bit_move::kingside_castle) {
-            if (is_square_attacked(origin, !side_to_move) || is_square_attacked(origin + 1, !side_to_move) ||
+            if (is_square_attacked(origin, !side_to_move) ||
+                is_square_attacked(origin + 1, !side_to_move) ||
                 is_square_attacked(origin + 2, !side_to_move)) {
                 return false;
             }
@@ -243,7 +250,7 @@ class bitboard {
      * @tparam update_score whether this action should update the PST_score
      */
     template <bool, bool> void place_piece(uint8_t piece, uint8_t target);
-    
+
     template <bool, bool> void unset_piece(uint8_t target);
     template <bool, bool> void replace_piece(uint8_t piece, uint8_t target);
     void make_null_move();

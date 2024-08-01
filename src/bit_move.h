@@ -7,8 +7,10 @@ class bit_move {
     uint32_t move = 0U;
 
     bit_move(uint8_t origin, uint8_t target, uint8_t flags, uint8_t type, uint8_t captured_type);
-    // 0000 0000 0000 00000000 00000000
-    // t    ct   fl   target   origin
+    /**
+     * `0000 0000 0000 00000000 00000000`
+     * `t... ct.. fl.. target.. origin`
+    */
     bit_move();
     uint8_t get_origin();
     uint8_t get_target();

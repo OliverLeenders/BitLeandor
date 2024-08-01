@@ -379,3 +379,6 @@ Versions/
 object_files/
 profile_object_files/
 Test/
+
+BitLeandor*
+src/CppProperties.json

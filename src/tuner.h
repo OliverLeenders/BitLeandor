@@ -13,7 +13,7 @@ public:
 	
 	// entry representing a position for the tuner
 	// * does not 
-	
+
 	static int weights[6 + 6 + 64 * 14 + 8 * 2 + 2];
 	static uint16_t w_pieces_MG_idx;
 	static uint16_t w_pieces_EG_idx;
@@ -27,8 +27,6 @@ public:
 
 	/**
 	 * @brief tuple indicating a used evaluation feature.
-	 * @li sad
-	 * @li asd
 	*/
 	struct ttuple {
 		uint16_t index = 0;

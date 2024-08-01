@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
     // initializing transposition table
     transposition_table::init_keys();
     search::init_lmr();
-    tuner::init_weights();
+    // tuner::init_weights();
 
     std::string pos = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     // std::string pos = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
@@ -190,28 +190,28 @@ void uci_console() {
                     }
                 }
             } else if (split->at(0) == "remove_loud") {
-                tuner::filter_quiet_positions();
+                // tuner::filter_quiet_positions();
             } else if (split->at(0) == "tune") {
-                tuner::tune(K);
+                // tuner::tune(K);
             } else if (split->at(0) == "test") {
                 //=======================================================//
                 //
                 // test tuner
                 //
                 //=======================================================//
-                std::vector<tuner::ttuple> tuples;
-                tuner::init_coefficients(&b, &tuples);
-                for (tuner::ttuple t : tuples) {
-                    std::cout << "idx: " << (int)t.index << " w: " << (int)t.white_coefficient
-                              << " b: " << (int)t.black_coefficient << std::endl;
-                }
+                // std::vector<tuner::ttuple> tuples;
+                // tuner::init_coefficients(&b, &tuples);
+                // for (tuner::ttuple t : tuples) {
+                //     std::cout << "idx: " << (int)t.index << " w: " << (int)t.white_coefficient
+                //               << " b: " << (int)t.black_coefficient << std::endl;
+                // }
             } else if (split->at(0) == "MSE") {
-                if (split->size() == 2) {
-                    std::ifstream file("quiet-labeled.epd");
-                    std::cout << "Mean-Square Error: "
-                              << tuner::mean_square_error(std::stod(split->at(1)), 1000000, &file)
-                              << std::endl;
-                }
+                // if (split->size() == 2) {
+                //     std::ifstream file("quiet-labeled.epd");
+                //     std::cout << "Mean-Square Error: "
+                //               << tuner::mean_square_error(std::stod(split->at(1)), 1000000, &file)
+                //               << std::endl;
+                // }
             } else if (split->at(0) == "eval") {
                 int score = evaluator::eval(&b);
                 std::cout << "material + pst:" << b.PST_score_MG << std::endl;

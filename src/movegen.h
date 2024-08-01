@@ -6,6 +6,7 @@
 #include "movelist.h"
 #include <list>
 
+/// @brief
 class movegen {
   public:
     // default constructor
@@ -392,9 +393,25 @@ class movegen {
 
     static void generate_king_cmoves(bitboard *b, movelist *l);
 
+    /**
+     * @brief Generates all capture moves from a position
+     * @param b the `bitboard` defining the position
+     * @param l the `movelist` to fill
+     */
     static void generate_all_captures(bitboard *b, movelist *l);
+
+    /**
+     * @brief Generate all NON-capture moves from a position
+     * @param b the `bitboard` defining the position
+     * @param l the `movelist` to fill
+     */
     static void generate_all_quiet_moves(bitboard *b, movelist *l);
 
+    /**
+     * @brief Generate all pseudo-legal moves from a position
+     * @param b the `bitboard` defining the position
+     * @param l the `movelist` to fill
+     */
     static void generate_all_pseudo_legal_moves(bitboard *b, movelist *l);
 
     enum states : uint8_t {
@@ -419,6 +436,13 @@ class movegen {
     //
     //============================================================================================//
 
+    /**
+     * @brief initializes the movegenerator `movegen`
+     * @param hash_move the hash move. If it is legal, it should be returned first.
+     * @param ply the current ply in the search
+     * @param side_to_move the side to move (generates moves only for this side)
+     * @param state controls what moves should be generated (see `enum states`)
+     */
     static void init_movegen(bit_move hash_move, int ply, bool side_to_move, uint8_t state);
     static void reset_movegen(int ply, int side_to_move);
     static bool provide_next_move(bitboard *b, bit_move *m);

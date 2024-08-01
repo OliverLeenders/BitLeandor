@@ -28,12 +28,14 @@ class search {
      */
     static std::chrono::time_point<std::chrono::high_resolution_clock> STARTTIME;
 
-    
     /**
-     * @brief The maximum depth to search to (= MAX_PV_SIZE, MAX_DEPTH)
+     * @brief The maximum depth to search to
      */
     static constexpr int MAX_DEPTH = 265;
 
+    /**
+     * @brief the initial radius of the aspiration window
+     */
     static constexpr int HALF_ASPIRATION_WINDOW = 64;
 
     static constexpr int CAPTURE_SCORE = 100000;
