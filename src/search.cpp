@@ -136,7 +136,7 @@ int search::search_iterative_deepening(bitboard *b, int depth, bool quiet) {
                       << " seldepth " << SELDEPTH    // log the selective search depth
                       << " multipv 1";               // hardcoded multipv value (not supported)
 
-            // if
+            // if score is a centipawn value (NO MATE) ...
             if (std::abs(score) < MATE - MAX_DEPTH - 1) {
                 // print cp score
                 std::cout << " score cp " << score << " ";
@@ -185,7 +185,6 @@ int search::search_iterative_deepening(bitboard *b, int depth, bool quiet) {
             if (valid_score) {
                 gather_and_print_pv(b, score, curr_depth);
             }
-            // end the line
             std::cout << std::endl;
         }
         if (valid_score) {
@@ -203,63 +202,6 @@ int search::search_iterative_deepening(bitboard *b, int depth, bool quiet) {
     return TOTAL_NODES;
 }
 
-void search::gather_and_print_pv(bitboard *b, int score, int curr_depth) {
-    bool root_side = b->side_to_move;
-    // index to iterate forward AND BACKWARD over the PV
-    int pv_index;
-    if (PV_SIZE[0] != 0) {
-        std::cout << "pv ";
-
-        for (pv_index = 0; pv_index < PV_SIZE[0]; pv_index++) {
-            bit_move m = PV[0][pv_index];
-            // if move is nullmove, break
-            if (m.move == 0) {
-                break;
-            }
-            // if move is illegal, break
-            if (!b->is_legal<false>(&m) && pv_index < curr_depth) {
-                std::cout << "illegal move in PV! " << bit_move::to_string(m) << std::endl;
-                break;
-            }
-            // record PV in transposition table
-            // if score is NOT mate score
-            // if (std::abs(score) < MATE - 256) {
-            //    tt.set(b->zobrist_key, 0, pv_index, (b->side_to_move == root_side) ? score :
-            //    -score,
-            //           tt_entry::EXACT, m);
-            //}
-            //// if score is mate score, scores need to reflect distance to mate as they are stored
-            /// in / the transposition table (maybe not necessarily)
-            // else {
-            //     tt.set(b->zobrist_key, 0, pv_index, (b->side_to_move == root_side) ? MATE :
-            //     -MATE,
-            //            tt_entry::EXACT, m);
-            // }
-            b->make_move(&m);
-            std::cout << bit_move::to_string(search::PV[0][pv_index]) << " ";
-        }
-        // iterate backward to unmake PV moves and to restore board state
-        for (; pv_index > 0; pv_index--) {
-            b->unmake_move();
-        }
-    }
-    prev_pv_size = PV_SIZE[0];
-
-    clear_PV();
-}
-
-/**
- * @brief Initializes the values for the Late-Move-Reduction table (LMR table).
- *
- * The LMR table is indexed by depth first and move_number second.
- */
-void search::init_lmr() {
-    for (int d = 0; d < MAX_DEPTH; d++) {
-        for (int m = 0; m < MAX_DEPTH; m++) {
-            lmr[d][m] = (int)(1.25 + log(d) * log(m) * 100 / 267);
-        }
-    }
-}
 
 int search::alpha_beta(bitboard *b, int depth, int alpha, int beta, int ply) {
     // check if time is up after every 2048 nodes (also check for user input)
@@ -386,6 +328,9 @@ int search::alpha_beta(bitboard *b, int depth, int alpha, int beta, int ply) {
     bit_move hash_move = bit_move();
 
     int tt_score = tt.probe(b->zobrist_key, depth, ply, alpha, beta, &hash_move);
+    if (zero_window && ply > 0 && tt_score != tt.VAL_UNKNOWN) {
+        return tt_score;
+    }
 
     bit_move non_generated_move = bit_move();
 
@@ -432,12 +377,12 @@ int search::alpha_beta(bitboard *b, int depth, int alpha, int beta, int ply) {
         NODES_SEARCHED++;
         int score;
 
-        // TODO: FIND BUG
+        // PVS-Implementation
         if (num_legal <= 1) {
             score = -alpha_beta(b, depth - 1, -beta, -alpha, ply + 1);
         } else {
             // zero window search
-            score = -alpha_beta(b, depth -1, -(alpha + 1), -alpha, ply + 1);
+            score = -alpha_beta(b, depth - 1, -(alpha + 1), -alpha, ply + 1);
             if (score > alpha && score < beta) {
                 score = -alpha_beta(b, depth - 1, -beta, -alpha, ply + 1);
             }
@@ -457,7 +402,7 @@ int search::alpha_beta(bitboard *b, int depth, int alpha, int beta, int ply) {
                 movegen::killers[0][ply] = m;
             }
             // if the node is a PV-node, store the score in the transposition table
-            // tt.set(b->zobrist_key, depth, ply, score, tt_entry::LOWER_BOUND, m);
+            tt.set(b->zobrist_key, depth, ply, score, tt_entry::LOWER_BOUND, m);
             movegen::reset_movegen(ply - 1, !side_to_move);
             return score;
         }
@@ -467,13 +412,13 @@ int search::alpha_beta(bitboard *b, int depth, int alpha, int beta, int ply) {
         if (score > best_score) {
             best_score = score;
             best_move = m;
-            flag = tt_entry::EXACT;
         }
         //========================================================================================//
         // search raises alpha
         //========================================================================================//
         if (score > alpha) {
             alpha = score;
+            flag = tt_entry::EXACT;
             if (!zero_window) {
                 update_PV(&m, ply);
             }
@@ -488,7 +433,9 @@ int search::alpha_beta(bitboard *b, int depth, int alpha, int beta, int ply) {
     } else if (num_legal == 0) {
         best_score = 0;
     }
-    tt.set(b->zobrist_key, depth, ply, best_score, flag, best_move);
+    if (!stop_now && ply != 0) {
+        tt.set(b->zobrist_key, depth, ply, best_score, flag, best_move);
+    }
     // b->print_board();
 
     return best_score;
@@ -576,6 +523,64 @@ int search::quiescence(bitboard *b, int alpha, int beta, int ply) {
     }
     // tt.set(b->zobrist_key, 0, ply, alpha, flag, best_move);
     return alpha;
+}
+
+void search::gather_and_print_pv(bitboard *b, int score, int curr_depth) {
+    bool root_side = b->side_to_move;
+    // index to iterate forward AND BACKWARD over the PV
+    int pv_index;
+    if (PV_SIZE[0] != 0) {
+        std::cout << "pv ";
+
+        for (pv_index = 0; pv_index < PV_SIZE[0]; pv_index++) {
+            bit_move m = PV[0][pv_index];
+            // if move is nullmove, break
+            if (m.move == 0) {
+                break;
+            }
+            // if move is illegal, break
+            if (!b->is_legal<false>(&m) && pv_index < curr_depth) {
+                std::cout << "illegal move in PV! " << bit_move::to_string(m) << std::endl;
+                break;
+            }
+            // record PV in transposition table
+            // if score is NOT mate score
+            // if (std::abs(score) < MATE - 256) {
+            //    tt.set(b->zobrist_key, 0, pv_index, (b->side_to_move == root_side) ? score :
+            //    -score,
+            //           tt_entry::EXACT, m);
+            //}
+            //// if score is mate score, scores need to reflect distance to mate as they are stored
+            /// in / the transposition table (maybe not necessarily)
+            // else {
+            //     tt.set(b->zobrist_key, 0, pv_index, (b->side_to_move == root_side) ? MATE :
+            //     -MATE,
+            //            tt_entry::EXACT, m);
+            // }
+            b->make_move(&m);
+            std::cout << bit_move::to_string(search::PV[0][pv_index]) << " ";
+        }
+        // iterate backward to unmake PV moves and to restore board state
+        for (; pv_index > 0; pv_index--) {
+            b->unmake_move();
+        }
+    }
+    prev_pv_size = PV_SIZE[0];
+
+    clear_PV();
+}
+
+/**
+ * @brief Initializes the values for the Late-Move-Reduction table (LMR table).
+ *
+ * The LMR table is indexed by depth first and move_number second.
+ */
+void search::init_lmr() {
+    for (int d = 0; d < MAX_DEPTH; d++) {
+        for (int m = 0; m < MAX_DEPTH; m++) {
+            lmr[d][m] = (int)(1.25 + log(d) * log(m) * 100 / 267);
+        }
+    }
 }
 
 void search::update_PV(bit_move *m, int ply) {
@@ -668,7 +673,7 @@ void search::communicate() {
         std::getline(std::cin, line);
         if (line != "") {
             std::vector<std::string> *split = new std::vector<std::string>;
-            utility::split_string(split, line);
+            utility::split_string(*split, line);
             if (split->at(0) == "stop") {
                 stop_now = true;
                 return;

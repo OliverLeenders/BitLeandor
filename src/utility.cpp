@@ -167,21 +167,6 @@ bool utility::random_bool() {
 * \param v vector of strings
 * \param s string to split
 */
-void utility::split_string(std::vector<std::string>* v, std::string s) {
-	std::string tmp = "";
-	for (size_t i = 0; i < s.length(); i++) {
-		if (s[i] != ' ') {
-			tmp.push_back(s[i]);
-		}
-		else {
-			if (tmp != "") {
-				v->push_back(tmp);
-			}
-			tmp = "";
-		}
-	}
-	v->push_back(tmp);
-}
 
 const int utility::num_relevant_bits_bishop[64] = {
 	6, 5, 5, 5, 5, 5, 5, 6,

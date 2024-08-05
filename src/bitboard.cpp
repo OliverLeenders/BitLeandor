@@ -54,13 +54,14 @@ bool bitboard::is_sane() {
 
 void bitboard::pos_from_fen(std::string fen) {
     std::vector<std::string> fen_split;
-    utility::split_string(&fen_split, fen);
+    utility::split_string(fen_split, fen);
+    this->full_move_clock = 0U;
     this->zobrist_key = 0ULL;
     for (int i = 0; i < 6; i++) {
         this->bbs[i][0] = 0ULL;
         this->bbs[i][1] = 0ULL;
     }
-
+    this->fifty_move_rule_counter = 0U;
     this->PST_score_MG = 0;
     this->PST_score_EG = 0;
 
@@ -190,13 +191,19 @@ void bitboard::pos_from_fen(std::string fen) {
         this->ep_target_square = 1ULL << index;
     }
     std::string fen_fifty_move_clock = fen_split[4];
+    this->fifty_move_rule_counter = (uint16_t) std::stoi(fen_fifty_move_clock);
+
+    // if fen is complete with full move clock ...
+    if (fen_split.size() > 5) {
+        this->full_move_clock = (uint16_t) std::stoi(fen_split[5]);
+    }
 
     return;
 }
 
 void bitboard::pos_from_epd_line(std::string epd_l) {
     std::vector<std::string> epd_split;
-    utility::split_string(&epd_split, epd_l);
+    utility::split_string(epd_split, epd_l);
 
     std::string fen_string;
     for (int i = 0; i < 4; i++) {
@@ -342,6 +349,9 @@ void bitboard::make_null_move() {
         }
         std::cout << "ARRIVED ADD CURRENT POSITION." << std::endl;
     }*/
+    // if (!is_sane()) {
+    //     std::cout << "Null-move insanity" << std::endl;
+    // }
 }
 /**
  * Undoes a nullmove.
@@ -379,6 +389,9 @@ void bitboard::unmake_null_move() {
         }
         std::cout << "ARRIVED ADD CURRENT POSITION." << std::endl;
     }*/
+    // if (!is_sane()) {
+    //     std::cout << "Null-move unmake insanity" << std::endl;
+    // }
 }
 
 /**
@@ -606,7 +619,9 @@ void bitboard::make_move(bit_move *m) {
             unset_piece<true, true>(target);
         }
         place_piece<true, true>(piece, target);
-
+        // if (!is_sane()) {
+        //     std::cout << "Make-move insanity" << std::endl;
+        // }
         return;
     }
 
@@ -745,6 +760,9 @@ void bitboard::unmake_move() {
     //    }
     //    std::cout << "ARRIVED ADD CURRENT POSITION." << std::endl;
     //}
+    //  if (!is_sane()) {
+    //     std::cout << "Null-move insanity" << std::endl;
+    // }
 }
 
 template <bool update_zobrist, bool update_score>

@@ -77,7 +77,7 @@ void uci_console() {
         std::string line = "";
         std::getline(std::cin, line);
         std::vector<std::string> *split = new std::vector<std::string>;
-        utility::split_string(split, line);
+        utility::split_string(*split, line);
         if (split->size() >= 1) {
             if (split->at(0) == "uci") {
                 std::cout << "id name Leandor 2.5.1" << std::endl;
@@ -108,7 +108,7 @@ void uci_console() {
                     }
                 } else if (split->at(1) == "fen") {
                     std::string fen = "";
-                    for (int i = 2; i < 6; i++) {
+                    for (int i = 2; i < 8; i++) {
                         fen += split->at(i) + " ";
                     }
                     b.pos_from_fen(fen);
