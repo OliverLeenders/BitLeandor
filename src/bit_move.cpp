@@ -1,12 +1,28 @@
 #include "bit_move.h"
 
-bit_move::bit_move(uint8_t origin, uint8_t target, uint8_t flags, uint8_t type, uint8_t captured_type) {
+bit_move::bit_move(uint8_t origin, uint8_t target, uint8_t flags, uint8_t type,
+                   uint8_t captured_type) {
     this->move = ((type & 15) << 20)            // shift the piece type to the correct position
                  | ((captured_type & 15) << 16) // shift the captured type ...
                  | ((flags & 15) << 12)         // shift the flags
                  | ((origin & 63) << 6)         // shift the origin
                  | (target & 63);               // target need not be shifted
 }
+
+const std::vector<uint8_t> bit_move::flag_list = {quiet_move,
+                                                  double_pawn_push,
+                                                  kingside_castle,
+                                                  queenside_castle,
+                                                  capture,
+                                                  ep_capture,
+                                                  knight_promotion,
+                                                  bishop_promotion,
+                                                  rook_promotion,
+                                                  queen_promotion,
+                                                  knight_capture_promotion,
+                                                  bishop_capture_promotion,
+                                                  rook_capture_promotion,
+                                                  queen_capture_promotion};
 
 bit_move::bit_move() { this->move = 0; }
 
@@ -44,6 +60,20 @@ std::string bit_move::to_string(bit_move m) {
             break;
         }
     }
+    return s;
+}
+
+std::string bit_move::to_long_string(bit_move m) {
+    std::string s = to_string(m);
+    if (is_capture(&m)) {
+        s += " capture";
+    }
+    if (is_promotion(&m)) {
+        s += " promotion";
+    }
+    s += " FLAG: " + std::to_string((int)m.get_flags());
+    s += " TYPE: " + std::to_string((int)m.get_piece_type());
+    s += " CAPT: " + std::to_string((int)m.get_captured_type());
     return s;
 }
 

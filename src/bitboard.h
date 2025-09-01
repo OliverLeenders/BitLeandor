@@ -2,6 +2,7 @@
 #include <ctype.h>
 
 #include <cstdint>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -79,7 +80,7 @@ class bitboard {
     /**
      * @brief Prints a ASCII-art image of the current board state.
      */
-    void print_board();
+    std::string print_board();
 
     /**
      * @brief Destroy the bitboard object.
@@ -87,18 +88,19 @@ class bitboard {
     ~bitboard();
     bool is_sane();
 
-    // templated is legal function needs to be in header-file for some stupid
+    // templated is_legal function needs to be in header-file for some stupid
     // c++ reason...
     template <bool was_generated> bool is_legal(bit_move *m) {
-        // clang-format off
-        const uint8_t flags          = m->get_flags();
-        const uint8_t origin 		 = m->get_origin();
-        const uint8_t target 		 = m->get_target();
-        const uint8_t type   		 = m->get_piece_type();
-        const uint8_t captured_type  = m->get_captured_type();
-        const uint8_t piece  		 = (side_to_move) ? type + BLACK_PAWN : type;
-        const uint8_t captured_piece = (side_to_move) ? captured_type     : captured_type + BLACK_PAWN;
-        // clang-format on
+        const uint8_t flags = m->get_flags();
+        const uint8_t origin = m->get_origin();
+        const uint8_t target = m->get_target();
+        const uint8_t type = m->get_piece_type();
+        const uint8_t captured_type = m->get_captured_type();
+        const uint8_t piece = (side_to_move) ? type + BLACK_PAWN : type;
+        const uint8_t captured_piece =
+            (captured_type != EMPTY) ? ((side_to_move) ? captured_type : captured_type + BLACK_PAWN)
+                                     : EMPTY_PIECE;
+        const bool is_capture = bit_move::is_capture(m);
 
         // if the move was not generated we need to check
         // the availability of a piece which is able to move
@@ -106,38 +108,71 @@ class bitboard {
         // not check vacancy of sliding piece rays
 
         if (!was_generated) {
-            uint64_t target_bb = 1ULL << target;
+            if (type != types[origin]) {
+                return false;
+            }
+            if (piece != pieces[origin]) {
+                return false; // move was invalid
+            }
+            // check if color of piece is correct
+            if ((piece == EMPTY_PIECE) || ((piece >= BLACK_PAWN) != side_to_move)) {
+                return false; // move was invalid
+            }
+            if (is_capture && flags != bit_move::ep_capture && captured_piece != pieces[target]) {
+                return false;
+            }
+            if (is_capture && flags != bit_move::ep_capture &&
+                (captured_piece < BLACK_PAWN) != side_to_move) {
+                return false; // move was invalid
+            }
+            if ((!is_capture && flags != bit_move::ep_capture) &&
+                (captured_type != EMPTY || pieces[target] != EMPTY_PIECE)) {
+                return false; // move was invalid
+            }
             // some conditions to fail early
             if (origin == target) {
                 return false;
             }
-            if (type == EMPTY) {
-                return false;
+
+            if ((flags == bit_move::double_pawn_push || flags == bit_move::ep_capture ||
+                 flags >= bit_move::knight_promotion) &&
+                type != PAWN) {
+                return false; // move was invalid
             }
-            // if the piece is not on the origin square or origin square is
-            // empty
-            if (piece != pieces[origin] || pieces[origin] == EMPTY_PIECE) {
-                return false;
+
+            if ((flags == bit_move::kingside_castle || flags == bit_move::queenside_castle) &&
+                type != KING) {
+                return false; // move was invalid
             }
+
             // if the move is a quiet move and the target square is not empty
-            if (flags == bit_move::quiet_move) {
-                if (pieces[target] != EMPTY_PIECE) {
+            uint64_t target_bb = 1ULL << target;
+            if (is_capture) {
+                if (flags != bit_move::ep_capture &&
+                    captured_piece != pieces[target]) { // this one is critical
                     return false;
                 }
-            } else if (flags == bit_move::capture || flags >= bit_move::knight_capture_promotion) {
-                if (captured_piece != pieces[target]) { // this one is critical
-                    return false;
-                }
-            } else if (flags == bit_move::ep_capture) {
-                if (target_bb != ep_target_square) {
-                    return false;
+                if (flags == bit_move::ep_capture) {
+                    if (target_bb != ep_target_square) {
+                        return false;
+                    }
                 }
             } else if (flags == bit_move::double_pawn_push) {
-                if (pieces[target] != EMPTY_PIECE ||
-                    pieces[target - ((side_to_move) ? -8 : 8)] != EMPTY_PIECE) {
+                // checking the target square happens earlier (somewhere above)
+                if (pieces[target - ((side_to_move) ? -8 : 8)] != EMPTY_PIECE) {
                     return false;
                 }
             } else if (flags == bit_move::kingside_castle) {
+                if (type != KING) {
+                    return false;
+                }
+                if (origin != E1 && origin != E8) {
+                    return false;
+                }
+                if (target != G1 && target != G8) {
+                    return false;
+                }
+
                 // if we have no castling right
                 if (!(this->castling_rights & ((side_to_move) ? b_kingside : w_kingside))) {
                     return false;
@@ -147,6 +182,15 @@ class bitboard {
                     return false;
                 }
             } else if (flags == bit_move::queenside_castle) {
+                if (type != KING) {
+                    return false;
+                }
+                if (origin != E1 && origin != E8) {
+                    return false;
+                }
+                if (target != C1 && target != C8) {
+                    return false;
+                }
                 // if we have no castling right
                 if (!(this->castling_rights & ((side_to_move) ? b_queenside : w_queenside))) {
                     return false;
@@ -157,23 +201,22 @@ class bitboard {
                     return false;
                 }
             }
-            if (types[origin] == KNIGHT) {
+            if (type == KNIGHT) {
                 if ((target_bb & attacks::knight_attacks[origin]) == 0ULL) {
                     return false;
                 }
             }
-            if (types[origin] == KING && flags != bit_move::kingside_castle &&
+            if (type == KING && flags != bit_move::kingside_castle &&
                 flags != bit_move::queenside_castle) {
                 if ((target_bb & attacks::king_attacks[origin]) == 0ULL) {
                     return false;
                 }
             }
-            if (types[origin] == PAWN) {
-                if (captured_type != EMPTY) {
-                    if ((target_bb & attacks::pawn_attacks[side_to_move][origin]) == 0ULL) {
-                        return false;
-                    }
-                } else {
+            if (flags >= bit_move::knight_promotion && type != PAWN) {
+                return false;
+            }
+            if (type == PAWN) {
+                if (!is_capture) {
                     if (side_to_move == WHITE) {
                         if (((target - origin != 16 && target - origin != 8) && origin < 16) ||
                             (origin >= 16 && target - origin != 8)) {
@@ -186,23 +229,31 @@ class bitboard {
                         }
                     }
                 }
+                if (flags >= bit_move::knight_promotion &&
+                    flags <= bit_move::queen_capture_promotion) {
+                    if (side_to_move == WHITE && target < 56) {
+                        return false;
+                    } else if (side_to_move == BLACK && target >= 8) {
+                        return false;
+                    }
+                }
             }
-            if (types[origin] >= BISHOP && types[origin] <= QUEEN) {
+            if (type >= BISHOP && type <= QUEEN) {
                 // return false if origin and target are not on the same
                 // diagonal, file or rank
-                if (types[origin] == BISHOP) { // Bishop
+                if (type == BISHOP) { // Bishop
                     if ((target_bb & attacks::diagonal_masks[origin]) == 0ULL) {
                         return false;
                     }
                 }
 
-                if (types[origin] == ROOK) { // Rook
+                if (type == ROOK) { // Rook
                     if (((1ULL << target) & attacks::horizontal_vertical_masks[origin]) == 0ULL) {
                         return false;
                     }
                 }
 
-                if (types[origin] == QUEEN) {
+                if (type == QUEEN) {
                     if (((1ULL << target) & (attacks::diagonal_masks[origin] |
                                              attacks::horizontal_vertical_masks[origin])) == 0ULL) {
                         return false;
@@ -229,7 +280,7 @@ class bitboard {
             }
         }
         make_move(m);
-        // uint8_t king_pos = BitScanForward64(bbs[KING][!side_to_move]);
+
         if (is_square_attacked(king_positions[!side_to_move], side_to_move)) {
             unmake_move();
             return false;

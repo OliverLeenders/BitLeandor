@@ -127,8 +127,10 @@ void movegen::init_movegen(bit_move hash_move, int ply, bool side_to_move, uint8
 }
 
 void movegen::reset_movegen(int ply, int side_to_move) {
-    movegen::ply = ply;
-    movegen::side_to_move[ply] = side_to_move;
+    movegen::ply = ply - 1;
+    if (ply > 0) {
+        movegen::side_to_move[ply] = side_to_move;
+    }
 }
 
 bool movegen::provide_next_move(bitboard *b, bit_move *m) {
@@ -210,7 +212,6 @@ void movegen::score_moves() {
         }
     }
 }
-
 
 // TODO: there is a bug
 void movegen::find_next_move(bit_move *m) {

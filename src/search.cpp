@@ -357,7 +357,7 @@ int search::alpha_beta(bitboard *b, int depth, int alpha, int beta, int ply) {
         // run a zero window search with reduced depth
         int null_score = -alpha_beta(b, depth - 2 - 1, -beta, -beta + 1, ply + 1);
         b->unmake_null_move();
-        movegen::reset_movegen(ply - 1, !side_to_move);
+        movegen::reset_movegen(ply, !side_to_move);
         if (null_score >= beta) {
             return beta;
         }
@@ -403,7 +403,7 @@ int search::alpha_beta(bitboard *b, int depth, int alpha, int beta, int ply) {
             }
             // if the node is a PV-node, store the score in the transposition table
             tt.set(b->zobrist_key, depth, ply, score, tt_entry::LOWER_BOUND, m);
-            movegen::reset_movegen(ply - 1, !side_to_move);
+            movegen::reset_movegen(ply, !side_to_move);
             return score;
         }
         //========================================================================================//
@@ -425,7 +425,7 @@ int search::alpha_beta(bitboard *b, int depth, int alpha, int beta, int ply) {
         }
     }
 
-    movegen::reset_movegen(ply - 1, !side_to_move);
+    movegen::reset_movegen(ply, !side_to_move);
 
     if (num_legal == 0 && is_check) {
         best_score = -MATE + ply;
@@ -541,6 +541,8 @@ void search::gather_and_print_pv(bitboard *b, int score, int curr_depth) {
             // if move is illegal, break
             if (!b->is_legal<false>(&m) && pv_index < curr_depth) {
                 std::cout << "illegal move in PV! " << bit_move::to_string(m) << std::endl;
+                b->print_board();
+                bool legal = b->is_legal<false>(&m);
                 break;
             }
             // record PV in transposition table

@@ -1,6 +1,6 @@
 #pragma once
 #include <chrono>
-#include <io.h>
+#include <cstring>
 
 #include "bitboard.h"
 #include "evaluator.h"

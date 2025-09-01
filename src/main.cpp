@@ -76,91 +76,94 @@ void uci_console() {
     while (true) {
         std::string line = "";
         std::getline(std::cin, line);
-        std::vector<std::string> *split = new std::vector<std::string>;
-        utility::split_string(*split, line);
-        if (split->size() >= 1) {
-            if (split->at(0) == "uci") {
+        std::vector<std::string> split;
+        utility::split_string(split, line);
+        if (split.size() >= 1) {
+            if (split.at(0) == "uci") {
                 std::cout << "id name Leandor 2.5.1" << std::endl;
                 std::cout << "id author Oliver Leenders" << std::endl;
                 std::cout << "uciok" << std::endl;
             }
 
-            else if (split->at(0) == "isready") {
+            else if (split.at(0) == "isready") {
                 std::cout << "readyok" << std::endl;
             }
 
-            else if (split->at(0) == "ucinewgame") {
+            else if (split.at(0) == "ucinewgame") {
+                std::ofstream file("log.txt", std::ios::app);
+                file << b.print_board() << std::endl;
+                file.close();
                 search::tt.clear();
                 evaluator::pawn_tt.clear();
                 search::clear_killers();
                 search::clear_history();
             }
 
-            else if (split->at(0) == "position") {
-                if (split->at(1) == "startpos") {
+            else if (split.at(0) == "position") {
+                if (split.at(1) == "startpos") {
                     b.pos_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-                    if (split->size() >= 3) {
-                        if (split->at(2) == "moves") {
-                            for (size_t i = 3; i < split->size(); i++) {
-                                parse_and_make_move(split, (int)i);
+                    if (split.size() >= 3) {
+                        if (split.at(2) == "moves") {
+                            for (size_t i = 3; i < split.size(); i++) {
+                                parse_and_make_move(&split, (int)i);
                             }
                         }
                     }
-                } else if (split->at(1) == "fen") {
+                } else if (split.at(1) == "fen") {
                     std::string fen = "";
                     for (int i = 2; i < 8; i++) {
-                        fen += split->at(i) + " ";
+                        fen += split.at(i) + " ";
                     }
                     b.pos_from_fen(fen);
-                    if (split->size() >= 9) {
-                        if (split->at(8) == "moves") {
-                            for (size_t i = 9; i < split->size(); i++) {
-                                parse_and_make_move(split, (int)i);
+                    if (split.size() >= 9) {
+                        if (split.at(8) == "moves") {
+                            for (size_t i = 9; i < split.size(); i++) {
+                                parse_and_make_move(&split, (int)i);
                             }
                         }
                     }
-                } else if (split->at(1) == "epd") {
+                } else if (split.at(1) == "epd") {
                     std::string epd = "";
-                    for (uint16_t i = 2; i < split->size(); i++) {
-                        epd += split->at(i) + " ";
+                    for (uint16_t i = 2; i < split.size(); i++) {
+                        epd += split.at(i) + " ";
                     }
                     b.pos_from_epd_line(epd);
-                } else if (split->at(1) == "kiwipete") {
+                } else if (split.at(1) == "kiwipete") {
                     b.pos_from_fen(
                         "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1");
-                    if (split->size() >= 3) {
-                        if (split->at(2) == "moves") {
-                            for (size_t i = 3; i < split->size(); i++) {
-                                parse_and_make_move(split, (int)i);
+                    if (split.size() >= 3) {
+                        if (split.at(2) == "moves") {
+                            for (size_t i = 3; i < split.size(); i++) {
+                                parse_and_make_move(&split, (int)i);
                             }
                         }
                     }
                 }
             }
 
-            else if (split->at(0) == "bench") {
+            else if (split.at(0) == "bench") {
                 bench();
             }
 
-            else if (split->at(0) == "go") {
-                if (split->size() >= 3) {
-                    if (split->at(1) == "depth") {
-                        int depth = std::stoi(split->at(2));
+            else if (split.at(0) == "go") {
+                if (split.size() >= 3) {
+                    if (split.at(1) == "depth") {
+                        int depth = std::stoi(split.at(2));
                         search::search_iterative_deepening(&b, depth, false);
                     }
-                    if (split->at(1) == "movetime") {
-                        int time = std::stoi(split->at(2));
+                    if (split.at(1) == "movetime") {
+                        int time = std::stoi(split.at(2));
                         search::ENDTIME = std::chrono::high_resolution_clock().now() +
                                           std::chrono::milliseconds(time);
                         search::search_iterative_deepening(&b, 256, false);
                         search::ENDTIME = {};
                     }
-                    if (split->size() >= 9 && split->at(1) == "wtime" && split->at(3) == "btime" &&
-                        split->at(5) == "winc" && split->at(7) == "binc") {
-                        int w_time = std::stoi((*split)[2]);
-                        int b_time = std::stoi((*split)[4]);
-                        int w_inc = std::stoi((*split)[6]);
-                        int b_inc = std::stoi((*split)[8]);
+                    if (split.size() >= 9 && split.at(1) == "wtime" && split.at(3) == "btime" &&
+                        split.at(5) == "winc" && split.at(7) == "binc") {
+                        int w_time = std::stoi(split[2]);
+                        int b_time = std::stoi(split[4]);
+                        int w_inc = std::stoi(split[6]);
+                        int b_inc = std::stoi(split[8]);
                         int time = 0;
                         if (b.side_to_move) {
                             time = std::min(b_time, (b_time + 25 * b_inc) / 25);
@@ -171,29 +174,33 @@ void uci_console() {
                                           std::chrono::milliseconds(time);
                         search::search_iterative_deepening(&b, 256, false);
                         search::ENDTIME = {};
-                    } else if (split->at(1) == "perft") {
-                        int depth = std::stoi(split->at(2));
+                    } else if (split.at(1) == "perft") {
+                        int depth = std::stoi(split.at(2));
                         perft::run_perft_staged_console(&b, depth);
                     }
-                } else if (split->size() == 2 && split->at(1) == "infinite") {
-                    search::search_iterative_deepening(&b, 256, false);
+                } else if (split.size() == 2) {
+                    if (split.at(1) == "infinite") {
+                        search::search_iterative_deepening(&b, 256, false);
+                    } else if (split.at(1) == "bfp") {
+                        std::cout << perft::brute_force_perft(&b) << std::endl;
+                    }
                 }
-            } else if (split->at(0) == "d") {
+            } else if (split.at(0) == "d") {
                 b.print_board();
-            } else if (split->at(0) == "islegal") {
-                if (split->size() == 2) {
-                    bit_move m = parse_move(split, 1);
+            } else if (split.at(0) == "islegal") {
+                if (split.size() == 2) {
+                    bit_move m = parse_move(&split, 1);
                     if (b.is_legal<false>(&m)) {
                         std::cout << "legal" << std::endl;
                     } else {
                         std::cout << "illegal" << std::endl;
                     }
                 }
-            } else if (split->at(0) == "remove_loud") {
+            } else if (split.at(0) == "remove_loud") {
                 // tuner::filter_quiet_positions();
-            } else if (split->at(0) == "tune") {
+            } else if (split.at(0) == "tune") {
                 // tuner::tune(K);
-            } else if (split->at(0) == "test") {
+            } else if (split.at(0) == "test") {
                 //=======================================================//
                 //
                 // test tuner
@@ -205,27 +212,31 @@ void uci_console() {
                 //     std::cout << "idx: " << (int)t.index << " w: " << (int)t.white_coefficient
                 //               << " b: " << (int)t.black_coefficient << std::endl;
                 // }
-            } else if (split->at(0) == "MSE") {
-                // if (split->size() == 2) {
+            } else if (split.at(0) == "MSE") {
+                // if (split.size() == 2) {
                 //     std::ifstream file("quiet-labeled.epd");
                 //     std::cout << "Mean-Square Error: "
-                //               << tuner::mean_square_error(std::stod(split->at(1)), 1000000, &file)
+                //               << tuner::mean_square_error(std::stod(split->at(1)), 1000000,
+                //               &file)
                 //               << std::endl;
                 // }
-            } else if (split->at(0) == "eval") {
+            } else if (split.at(0) == "eval") {
                 int score = evaluator::eval(&b);
                 std::cout << "material + pst:" << b.PST_score_MG << std::endl;
                 std::cout << "material + pst + pawn_structure: " << score << std::endl;
-            } else if (split->at(0) == "unmake") {
+            } else if (split.at(0) == "unmake") {
                 if (bit_move::to_string(b.game_history.back().last_move) == "a1a1") {
                     b.unmake_null_move();
                 } else {
                     b.unmake_move();
                 }
-            } else if (split->at(0) == "quit") {
+            } else if (split.at(0) == "quit") {
+                std::ofstream file("log.txt", std::ios::app);
+                file << b.print_board() << std::endl;
+                file.close();
                 break;
             } else {
-                std::cout << "Unknown command: " << split->at(0) << std::endl;
+                std::cout << "Unknown command: " << split.at(0) << std::endl;
             }
         }
     }

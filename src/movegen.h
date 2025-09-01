@@ -23,6 +23,71 @@ class movegen {
     // black pawn push offset
     static constexpr int SOUTH = -8;
 
+
+    enum states : uint8_t {
+        HASH_MOVE = 0U,
+        KILLER_1 = 1U,
+        KILLER_2 = 2U,
+        QUIET_MOVES = 3U,
+        CAPTURES = 4U,
+        DONE = 5U
+    };
+
+    static uint8_t state[256];
+    static uint8_t current_move_index[256];
+    static movelist MGEN_movelist[256];
+    static bit_move hash_move[256];
+    static int ply;
+    static bool side_to_move[256];
+
+    //============================================================================================//
+    //
+    // State Machine
+    //
+    //============================================================================================//
+
+    /**
+     * @brief initializes the movegenerator `movegen`
+     * @param hash_move the hash move. If it is legal, it should be returned first.
+     * @param ply the current ply in the search
+     * @param side_to_move the side to move (generates moves only for this side)
+     * @param state controls what moves should be generated (see `enum states`)
+     */
+    static void init_movegen(bit_move hash_move, int ply, bool side_to_move, uint8_t state);
+    static void reset_movegen(int ply, int side_to_move);
+    /**
+     * @brief Provides the next move of the Staged Move Generator implementation.
+     * @param b pointer to the board representation
+     * @param m pointer to where the next move should be written to. 
+     * @return `true` if a next move could be generated, `false` otherwise.
+     */
+    static bool provide_next_move(bitboard *b, bit_move *m);
+    static void find_next_move(bit_move *m);
+    static void score_moves();
+
+    //============================================================================================//
+    //
+    // Resources for Move Ordering
+    //
+    //============================================================================================//
+    // clang-format off
+    static constexpr int MVV_LVA[6][6] = {
+        {105, 205, 305, 405, 505, 605},
+        {104, 204, 304, 404, 504, 604},
+        {103, 203, 303, 403, 503, 603},
+        {102, 202, 302, 402, 502, 602},
+        {101, 201, 301, 401, 501, 601},
+        {100, 200, 300, 400, 500, 600}
+    };
+    // clang-format on
+
+    // [MAX_DEPTH][KILLER_INDEX]
+    static bit_move killers[256][2];
+
+    /** TODO: check if history overflows */
+    // [side_to_move][origin][target]
+    static int history[2][64][64];
+
     /**
      * Generate all quiet pawn moves.
      *
@@ -414,61 +479,5 @@ class movegen {
      */
     static void generate_all_pseudo_legal_moves(bitboard *b, movelist *l);
 
-    enum states : uint8_t {
-        HASH_MOVE = 0U,
-        KILLER_1 = 1U,
-        KILLER_2 = 2U,
-        QUIET_MOVES = 3U,
-        CAPTURES = 4U,
-        DONE = 5U
-    };
 
-    static uint8_t state[256];
-    static uint8_t current_move_index[256];
-    static movelist MGEN_movelist[256];
-    static bit_move hash_move[256];
-    static int ply;
-    static bool side_to_move[256];
-
-    //============================================================================================//
-    //
-    // State Machine
-    //
-    //============================================================================================//
-
-    /**
-     * @brief initializes the movegenerator `movegen`
-     * @param hash_move the hash move. If it is legal, it should be returned first.
-     * @param ply the current ply in the search
-     * @param side_to_move the side to move (generates moves only for this side)
-     * @param state controls what moves should be generated (see `enum states`)
-     */
-    static void init_movegen(bit_move hash_move, int ply, bool side_to_move, uint8_t state);
-    static void reset_movegen(int ply, int side_to_move);
-    static bool provide_next_move(bitboard *b, bit_move *m);
-    static void find_next_move(bit_move *m);
-    static void score_moves();
-
-    //============================================================================================//
-    //
-    // Resources for Move Ordering
-    //
-    //============================================================================================//
-    // clang-format off
-    static constexpr int MVV_LVA[6][6] = {
-        {105, 205, 305, 405, 505, 605},
-        {104, 204, 304, 404, 504, 604},
-        {103, 203, 303, 403, 503, 603},
-        {102, 202, 302, 402, 502, 602},
-        {101, 201, 301, 401, 501, 601},
-        {100, 200, 300, 400, 500, 600}
-    };
-    // clang-format on
-
-    // [MAX_DEPTH][KILLER_INDEX]
-    static bit_move killers[256][2];
-
-    /** TODO: check if history overflows */
-    // [side_to_move][origin][target]
-    static int history[2][64][64];
 };

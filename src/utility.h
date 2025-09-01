@@ -37,7 +37,7 @@ class utility {
     static uint64_t generate_magic_number(int square, int relevant_bits, bool is_bishop);
     static void generate_magic_attacks();
     bool random_bool();
-    static void utility::split_string(std::vector<std::string> &v, std::string s, char delim = ' ') {
+    static void split_string(std::vector<std::string> &v, std::string s, char delim = ' ') {
         std::string tmp = "";
         for (size_t i = 0; i < s.length(); i++) {
             if (s[i] != delim) {

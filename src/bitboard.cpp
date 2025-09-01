@@ -180,7 +180,6 @@ void bitboard::pos_from_fen(std::string fen) {
             break;
         }
     }
-
     std::string fen_ep_target_square = fen_split[3];
 
     if (fen_ep_target_square == "-") {
@@ -191,11 +190,11 @@ void bitboard::pos_from_fen(std::string fen) {
         this->ep_target_square = 1ULL << index;
     }
     std::string fen_fifty_move_clock = fen_split[4];
-    this->fifty_move_rule_counter = (uint16_t) std::stoi(fen_fifty_move_clock);
+    this->fifty_move_rule_counter = (uint16_t)std::stoi(fen_fifty_move_clock);
 
     // if fen is complete with full move clock ...
     if (fen_split.size() > 5) {
-        this->full_move_clock = (uint16_t) std::stoi(fen_split[5]);
+        this->full_move_clock = (uint16_t)std::stoi(fen_split[5]);
     }
 
     return;
@@ -424,7 +423,7 @@ bool bitboard::is_square_attacked(int square, bool side_to_move) {
 
 // b2c3 a6e2 e1e2 a7b6 e2e3 a1a1 g2f3 e3e2
 
-void bitboard::print_board() {
+std::string bitboard::print_board() {
     unsigned long index = 0;
     std::string pieces_str[64] = {};
     if (bbs[KING][WHITE] != 0ULL) {
@@ -495,25 +494,28 @@ void bitboard::print_board() {
         pieces_str[index] = "p";
         b_pawns &= b_pawns - 1;
     }
-    std::cout << std::endl;
+    std::ostringstream stream;
+    stream << std::endl;
     for (int i = 7; i >= 0; i--) {
         for (int j = 0; j < 8; j++) {
             if (pieces_str[i * 8 + j] != "") {
-                std::cout << pieces_str[i * 8 + j] << " ";
+                stream << pieces_str[i * 8 + j] << " ";
             } else {
-                std::cout << "  ";
+                stream << "  ";
             }
         }
-        std::cout << std::endl;
+        stream << std::endl;
     }
-    std::cout << std::endl;
+    stream << std::endl;
     for (board_state s : game_history) {
-        std::cout << bit_move::to_string(s.last_move) << " ";
+        stream << bit_move::to_string(s.last_move) << " ";
     }
-    std::cout << std::endl;
-    std::cout << "FEN: " << pos_to_fen() << std::endl;
-    std::cout << "Hash: " << zobrist_key << std::endl;
-    std::cout << std::endl;
+    stream << std::endl;
+    stream << "FEN: " << pos_to_fen() << std::endl;
+    stream << "Hash: " << zobrist_key << std::endl;
+    stream << std::endl;
+    std::cout << stream.str();
+    return stream.str();
 }
 
 /**
@@ -648,27 +650,27 @@ void bitboard::make_move(bit_move *m) {
         place_piece<true, true>(piece, target);
     }
 
-//sanity:
-//    std::string indent = "";
-//    for (int i = 0; i < this->game_history.size(); i++) {
-//        indent += "\t";
-//    }
-//    last_100_moves.push_back(std::pair(indent + "make " + bit_move::to_string(*m),
-//                                       this->pos_to_fen() + " " + std::to_string(line_num)));
-//    if (last_100_moves.size() > 10) {
-//        last_100_moves.pop_front();
-//    }
-//
-//    if (!is_sane()) {
-//        std::cout << "not sane make" << std::endl;
-//        std::cout << "MOVE: " << bit_move::to_string(*m) << std::endl;
-//        std::list<std::pair<std::string, std::string>>::iterator iter = last_100_moves.begin();
-//        while (iter != last_100_moves.end()) {
-//            std::cout << iter->first << " <==> " << iter->second << std::endl;
-//            iter++;
-//        }
-//        std::cout << "ARRIVED ADD CURRENT POSITION." << std::endl;
-//    }
+    // sanity:
+    //     std::string indent = "";
+    //     for (int i = 0; i < this->game_history.size(); i++) {
+    //         indent += "\t";
+    //     }
+    //     last_100_moves.push_back(std::pair(indent + "make " + bit_move::to_string(*m),
+    //                                        this->pos_to_fen() + " " + std::to_string(line_num)));
+    //     if (last_100_moves.size() > 10) {
+    //         last_100_moves.pop_front();
+    //     }
+    //
+    //     if (!is_sane()) {
+    //         std::cout << "not sane make" << std::endl;
+    //         std::cout << "MOVE: " << bit_move::to_string(*m) << std::endl;
+    //         std::list<std::pair<std::string, std::string>>::iterator iter =
+    //         last_100_moves.begin(); while (iter != last_100_moves.end()) {
+    //             std::cout << iter->first << " <==> " << iter->second << std::endl;
+    //             iter++;
+    //         }
+    //         std::cout << "ARRIVED ADD CURRENT POSITION." << std::endl;
+    //     }
 }
 
 void bitboard::unmake_move() {
@@ -729,40 +731,42 @@ void bitboard::unmake_move() {
 
     place_piece<false, false>(piece, origin);
 
-    //std::string indent = "";
-    //for (int i = 0; i <= this->game_history.size(); i++) {
-    //    indent += "\t";
-    //}
-
-    //if (this->last_100_moves.back().first == indent + "UNmake " + bit_move::to_string(prev_move)) {
-    //    std::cout << "break" << std::endl;
-    //    std::cout << "MOVE: " << bit_move::to_string(prev_move) << std::endl;
-    //    std::list<std::pair<std::string, std::string>>::iterator iter = last_100_moves.begin();
-    //    while (iter != last_100_moves.end()) {
-    //        std::cout << iter->first << " <==> " << iter->second << std::endl;
-    //        iter++;
-    //    }
-    //    std::cout << "ARRIVED ADD CURRENT POSITION." << std::endl;
-    //}
-    //this->last_100_moves.push_back(std::pair(indent + "UNmake " + bit_move::to_string(prev_move),
-    //                                         this->pos_to_fen() + " " + std::to_string(line_num)));
-    //if (this->last_100_moves.size() > 10) {
-    //    this->last_100_moves.pop_front();
-    //}
-
-    //if (!is_sane()) {
-    //    std::cout << "not sane unmake" << std::endl;
-    //    std::cout << "MOVE: " << bit_move::to_string(prev_move) << std::endl;
-    //    std::list<std::pair<std::string, std::string>>::iterator iter = last_100_moves.begin();
-    //    while (iter != last_100_moves.end()) {
-    //        std::cout << iter->first << " <==> " << iter->second << std::endl;
-    //        iter++;
-    //    }
-    //    std::cout << "ARRIVED ADD CURRENT POSITION." << std::endl;
-    //}
-    //  if (!is_sane()) {
-    //     std::cout << "Null-move insanity" << std::endl;
+    // std::string indent = "";
+    // for (int i = 0; i <= this->game_history.size(); i++) {
+    //     indent += "\t";
     // }
+
+    // if (this->last_100_moves.back().first == indent + "UNmake " + bit_move::to_string(prev_move))
+    // {
+    //     std::cout << "break" << std::endl;
+    //     std::cout << "MOVE: " << bit_move::to_string(prev_move) << std::endl;
+    //     std::list<std::pair<std::string, std::string>>::iterator iter = last_100_moves.begin();
+    //     while (iter != last_100_moves.end()) {
+    //         std::cout << iter->first << " <==> " << iter->second << std::endl;
+    //         iter++;
+    //     }
+    //     std::cout << "ARRIVED ADD CURRENT POSITION." << std::endl;
+    // }
+    // this->last_100_moves.push_back(std::pair(indent + "UNmake " + bit_move::to_string(prev_move),
+    //                                          this->pos_to_fen() + " " +
+    //                                          std::to_string(line_num)));
+    // if (this->last_100_moves.size() > 10) {
+    //     this->last_100_moves.pop_front();
+    // }
+
+    // if (!is_sane()) {
+    //     std::cout << "not sane unmake" << std::endl;
+    //     std::cout << "MOVE: " << bit_move::to_string(prev_move) << std::endl;
+    //     std::list<std::pair<std::string, std::string>>::iterator iter = last_100_moves.begin();
+    //     while (iter != last_100_moves.end()) {
+    //         std::cout << iter->first << " <==> " << iter->second << std::endl;
+    //         iter++;
+    //     }
+    //     std::cout << "ARRIVED ADD CURRENT POSITION." << std::endl;
+    // }
+    //   if (!is_sane()) {
+    //      std::cout << "Null-move insanity" << std::endl;
+    //  }
 }
 
 template <bool update_zobrist, bool update_score>
@@ -797,9 +801,16 @@ void bitboard::place_piece(uint8_t piece, uint8_t target) {
     }
 }
 
+
 template <bool update_zobrist, bool update_score> void bitboard::unset_piece(uint8_t target) {
     const uint8_t piece = pieces[target];
     const uint8_t type = piece % BLACK_PAWN;
+
+    if (piece == EMPTY_PIECE) {
+        std::cout << "trying to remove empty piece at " << (int)target << std::endl;
+        return;
+    }
+
     const bool color = piece >= BLACK_PAWN;
 
     const uint64_t target_bb = ~((1ULL) << target);
