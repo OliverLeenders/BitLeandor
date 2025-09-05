@@ -6,12 +6,9 @@ uint64_t transposition_table::en_passant_keys[8] = {0};
 uint64_t transposition_table::side_key = 0ULL;
 
 transposition_table::transposition_table(int size) {
-    delete[] table;
-    this->table = new tt_entry[size];
+    this->table = std::make_unique<tt_entry[]>(size);
     this->size = size;
 }
-
-transposition_table::transposition_table() {}
 
 void transposition_table::clear() {
     for (int i = 0; i < size; i++) {
@@ -102,4 +99,4 @@ int transposition_table::probe_qsearch(uint64_t key, int ply, int alpha, int bet
     return VAL_UNKNOWN;
 }
 
-transposition_table::~transposition_table() { delete[] table; }
+transposition_table::~transposition_table() {}

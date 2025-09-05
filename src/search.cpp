@@ -674,9 +674,9 @@ void search::communicate() {
         std::string line = "";
         std::getline(std::cin, line);
         if (line != "") {
-            std::vector<std::string> *split = new std::vector<std::string>;
-            utility::split_string(*split, line);
-            if (split->at(0) == "stop") {
+            std::vector<std::string> split;
+            utility::split_string(split, line);
+            if (split.at(0) == "stop") {
                 stop_now = true;
                 return;
             }

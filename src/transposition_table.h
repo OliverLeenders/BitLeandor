@@ -2,16 +2,23 @@
 
 #include "tt_entry.h"
 #include "utility.h"
+#include <memory>
 
 class transposition_table {
   public:
     static const int VAL_UNKNOWN = 200000;
-    transposition_table(int size);
-    transposition_table();
+    transposition_table(int size = 16777216);
+
+    transposition_table(const transposition_table &) = delete;
+    transposition_table &operator=(const transposition_table &) = delete;
+
+
     int size = 16777216;
     static void init_keys();
     void clear();
-    tt_entry *table = new tt_entry[16777216];
+    
+    std::unique_ptr<tt_entry[]> table;
+    
     static uint64_t piece_keys[12][64];
     static uint64_t castling_keys[4];
     static uint64_t en_passant_keys[8];

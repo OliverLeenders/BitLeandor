@@ -1,5 +1,5 @@
 $command = "cutechess-cli.exe"
-$arguments = '-engine conf="Leandor dev 3.0 TT-fix debug" -engine conf="Leandor dev 3.0 PVS" -each tc=inf/10+0.1 -openings file="C:\Users\olive\Desktop\Schach\Books\Balsa_v110221.pgn" format=pgn order=random -games 2 -rounds 5000 -repeat 2 -sprt elo0=0 elo1=10 alpha=0.05 beta=0.05 -concurrency 1 -ratinginterval 10 -pgnout "sprt.pgn"'
+$arguments = '-engine conf="Leandor dev 2.6.2 05092025--1134" -engine conf="Leandor.1.2" -each tc=inf/10+0.1 -openings file="C:\Users\olive\Desktop\Schach\Books\Balsa_v110221.pgn" format=pgn order=random -games 2 -rounds 5000 -repeat 2 -sprt elo0=0 elo1=10 alpha=0.05 beta=0.05 -concurrency 6 -ratinginterval 10 -pgnout "sprt.pgn"'
 
 
 $process = Start-Process -FilePath $command -ArgumentList $arguments -NoNewWindow -Wait

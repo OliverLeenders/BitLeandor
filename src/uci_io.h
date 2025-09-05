@@ -1,7 +1,12 @@
 #pragma once
+
+// Ensure Windows headers don't define min/max macros
+#ifndef NOMINMAX
 #define NOMINMAX 1
-#ifdef WIN64
-#include <winsock.h>
+#endif
+
+// Correct platform detection: MSVC / MinGW define _WIN32, not WIN32
+#ifdef _WIN32
 #include <windows.h>
 #else
 #include <sys/select.h>
@@ -10,4 +15,5 @@
 #include <cstdio>
 #endif
 
-extern int input_waiting();
+// Returns number of pending input events (0 if none)
+int input_waiting();
