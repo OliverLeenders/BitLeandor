@@ -100,6 +100,8 @@ class search {
     //
     //============================================================================================//
 
+    static void set_hash_size(int size_mb);
+
     /**
      * @brief Performs an iterative deepening PVS alpha-beta search.
      *

@@ -13,7 +13,7 @@ void parse_and_make_move(std::vector<std::string> *split, int i);
 
 // value of K in sigmoid function
 double K = 1.31f;
-std::string VERSION = "2.6.0";
+std::string VERSION = "2.0.0";
 
 bit_move parse_move(std::vector<std::string> *split, int i);
 bitboard b = bitboard();
@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
     // std::endl; initializing attack tables
     attacks::init_attack_tables();
 
-    // generate mafics
+    // generate magics
     utility::generate_magic_attacks();
     attacks::init_directional_masks();
     // initializing evaluation tables
@@ -80,9 +80,21 @@ void uci_console() {
         utility::split_string(split, line);
         if (split.size() >= 1) {
             if (split.at(0) == "uci") {
-                std::cout << "id name Leandor 2.5.1" << std::endl;
+                std::cout << "id name Leandor " << VERSION << std::endl;
                 std::cout << "id author Oliver Leenders" << std::endl;
+                std::cout << "option name Hash type spin default 64 min 1 max 4096"
+                          << std::endl;
                 std::cout << "uciok" << std::endl;
+            }
+
+            if (split.at(0) == "setoption") {
+                if (split.size() >= 4) {
+                    if (split.at(1) == "name" && split.at(2) == "Hash") {
+                        int size = std::stoi(split.at(4));
+                        search::set_hash_size(size);
+                        std::cout << "Hash set to " << size << " MB" << std::endl;
+                    }
+                }
             }
 
             else if (split.at(0) == "isready") {

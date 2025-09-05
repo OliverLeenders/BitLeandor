@@ -22,6 +22,19 @@ void transposition_table::clear() {
     }
 }
 
+uint64_t transposition_table::set_size(int size_in_mb) {
+    uint64_t upper_bound = std::min(size_in_mb, MAX_SIZE_MB) * 1024 * 1024 / sizeof(tt_entry);
+    // set actual size to the largest power of two smaller than upper_bound
+    uint64_t size = 1;
+    while ((size << 1) < upper_bound) {
+        size <<= 1;
+    }
+    size = std::max(1ULL, size);
+    this->table = std::make_unique<tt_entry[]>(size);
+    this->size = size;
+    return size;
+}
+
 void transposition_table::init_keys() {
     for (int i = 0; i < 12; i++) {
         for (int j = 0; j < 64; j++) {

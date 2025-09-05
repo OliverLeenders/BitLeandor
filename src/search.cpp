@@ -46,6 +46,10 @@ int search::QNODES_SEARCHED = 0;
 
 int search::lmr[MAX_DEPTH][MAX_DEPTH] = {{0}};
 
+void search::set_hash_size(int size_mb) {
+    tt.set_size(size_mb);
+}
+
 int search::search_iterative_deepening(bitboard *b, int depth, bool quiet) {
     stop_now = false;
     int prev_score = 0;
@@ -201,7 +205,6 @@ int search::search_iterative_deepening(bitboard *b, int depth, bool quiet) {
     }
     return TOTAL_NODES;
 }
-
 
 int search::alpha_beta(bitboard *b, int depth, int alpha, int beta, int ply) {
     // check if time is up after every 2048 nodes (also check for user input)
