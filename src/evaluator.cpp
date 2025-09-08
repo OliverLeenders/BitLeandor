@@ -24,10 +24,14 @@ int evaluator::eval(bitboard *b) {
 
     midgame_score = b->PST_score_MG;
     endgame_score = b->PST_score_EG;
+
+
+
+
     // if there are pawns on the board, evaluate the pawn structure
-    if ((b->bbs[PAWN][WHITE] | b->bbs[PAWN][BLACK])) {
-        // eval_pawn_structure(b, &midgame_score, &endgame_score);
-    }
+    // if ((b->bbs[PAWN][WHITE] | b->bbs[PAWN][BLACK])) {
+    //     eval_pawn_structure(b, &midgame_score, &endgame_score);
+    // }
 
     //============================================================================================//
     //

@@ -20,8 +20,8 @@ $(shell mkdir -p $(OBJDIR) $(PROFILE_OBJDIR) $(OUTDIR))
 # get date
 date = $(shell date '+%d%m%Y--%H%M')
 # naming conventions
-NAME="Leandor dev 2.6.2 $(date).exe"
-NAME_PROFILE="Leandor dev 2.6.2 profile.exe"
+NAME="Leandor dev 2.0.0 $(date).exe"
+NAME_PROFILE="Leandor dev 2.0.0 profile.exe"
 
 # all source files
 SRCS = $(wildcard *.cpp)

@@ -187,7 +187,7 @@ int search::search_iterative_deepening(bitboard *b, int depth, bool quiet) {
             //====================================================================================//
 
             if (valid_score) {
-                gather_and_print_pv(b, score, curr_depth);
+                gather_and_print_pv(b, curr_depth);
             }
             std::cout << std::endl;
         }
@@ -296,8 +296,6 @@ int search::alpha_beta(bitboard *b, int depth, int alpha, int beta, int ply) {
     uint8_t flag = tt_entry::UPPER_BOUND;
     int best_score = -MATE + ply;
 
-    uint8_t LMR = 0;
-
     //============================================================================================//
     //
     // mate dist pruning
@@ -335,7 +333,7 @@ int search::alpha_beta(bitboard *b, int depth, int alpha, int beta, int ply) {
         return tt_score;
     }
 
-    bit_move non_generated_move = bit_move();
+    // bit_move non_generated_move = bit_move();
 
     int static_eval = evaluator::eval(b);
 
@@ -373,8 +371,7 @@ int search::alpha_beta(bitboard *b, int depth, int alpha, int beta, int ply) {
 
     while (movegen::provide_next_move(b, &m)) {
         num_legal++;
-        uint8_t move_flags = m.get_flags();
-        bool is_quiet_move = move_flags < bit_move::capture;
+        // uint8_t move_flags = m.get_flags();
 
         b->make_move(&m);
         NODES_SEARCHED++;
@@ -485,14 +482,14 @@ int search::quiescence(bitboard *b, int alpha, int beta, int ply) {
         bit_move m = moves[ply].moves[i].m;
         if (b->is_legal<true>(&m)) {
             num_legal++;
-            int delta = alpha - static_eval - 250;
-
+            
             //====================================================================================//
             //
             // delta pruning
             //
             //====================================================================================//
-
+            
+            // int delta = alpha - static_eval - 250;
             // if (!is_check             // do not prune if in check
             //     && m.get_flags() >= 4 // if move is capture or promotion
             //     && weights::piece_values[0][b->types[m.get_target()]] < delta) { // delta pruning
@@ -528,8 +525,7 @@ int search::quiescence(bitboard *b, int alpha, int beta, int ply) {
     return alpha;
 }
 
-void search::gather_and_print_pv(bitboard *b, int score, int curr_depth) {
-    bool root_side = b->side_to_move;
+void search::gather_and_print_pv(bitboard *b, int curr_depth) {
     // index to iterate forward AND BACKWARD over the PV
     int pv_index;
     if (PV_SIZE[0] != 0) {
@@ -545,7 +541,7 @@ void search::gather_and_print_pv(bitboard *b, int score, int curr_depth) {
             if (!b->is_legal<false>(&m) && pv_index < curr_depth) {
                 std::cout << "illegal move in PV! " << bit_move::to_string(m) << std::endl;
                 b->print_board();
-                bool legal = b->is_legal<false>(&m);
+                // bool legal = b->is_legal<false>(&m);
                 break;
             }
             // record PV in transposition table

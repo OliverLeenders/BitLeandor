@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 class bit_move {
@@ -13,7 +14,12 @@ class bit_move {
      * `0000 0000 0000 00000000 00000000`
      * `t... ct.. fl.. target.. origin`
      */
-    bit_move();
+    bit_move() = default;
+    bit_move(const bit_move &other) = default;
+    bit_move &operator=(const bit_move &other) = default;
+    bit_move(bit_move &&other) = default;
+    bit_move &operator=(bit_move &&other) = default;
+
     uint8_t get_origin();
     uint8_t get_target();
     uint8_t get_flags();
@@ -45,7 +51,8 @@ class bit_move {
 
     static constexpr uint32_t NULL_MOVE = 0U;
     static std::string to_string(bit_move m);
-    static std::string to_long_string(bit_move m); 
-    ~bit_move();
+    static std::string to_long_string(bit_move m);
     static std::string squares_to_string[64];
 };
+
+static_assert(std::is_trivially_copyable<bit_move>::value, "bit_move must be trivially copyable");

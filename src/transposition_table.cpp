@@ -11,7 +11,7 @@ transposition_table::transposition_table(int size) {
 }
 
 void transposition_table::clear() {
-    for (int i = 0; i < size; i++) {
+    for (uint64_t i = 0ULL; i < size; i++) {
         // clang-format off
 		table[i].key 			= 0;
         table[i].depth 			= 0;
@@ -95,7 +95,7 @@ int transposition_table::probe(uint64_t key, int depth, int ply, int alpha, int 
     return VAL_UNKNOWN;
 }
 
-int transposition_table::probe_qsearch(uint64_t key, int ply, int alpha, int beta, bit_move *m) {
+int transposition_table::probe_qsearch(uint64_t key, int alpha, int beta, bit_move *m) {
     tt_entry entry = this->table[key % this->size];
     if (entry.key == key) {
         m->move = entry.hash_move.move;

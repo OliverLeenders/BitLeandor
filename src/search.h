@@ -209,7 +209,7 @@ class search {
      * @param score the score determined by the search
      * @param curr_depth the depth of the search at the point of calling this
      */
-    static void gather_and_print_pv(bitboard *b, int score, int curr_depth);
+    static void gather_and_print_pv(bitboard *b, int curr_depth);
 
     /**
      * @brief Checks if search time is up and checks for user input that would trigger search

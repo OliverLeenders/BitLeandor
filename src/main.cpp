@@ -87,7 +87,7 @@ void uci_console() {
                 std::cout << "uciok" << std::endl;
             }
 
-            if (split.at(0) == "setoption") {
+            else if (split.at(0) == "setoption") {
                 if (split.size() >= 4) {
                     if (split.at(1) == "name" && split.at(2) == "Hash") {
                         int size = std::stoi(split.at(4));
@@ -102,9 +102,9 @@ void uci_console() {
             }
 
             else if (split.at(0) == "ucinewgame") {
-                std::ofstream file("log.txt", std::ios::app);
-                file << b.print_board() << std::endl;
-                file.close();
+                // std::ofstream file("log.txt", std::ios::app);
+                // file << b.print_board() << std::endl;
+                // file.close();
                 search::tt.clear();
                 evaluator::pawn_tt.clear();
                 search::clear_killers();
@@ -243,9 +243,9 @@ void uci_console() {
                     b.unmake_move();
                 }
             } else if (split.at(0) == "quit") {
-                std::ofstream file("log.txt", std::ios::app);
-                file << b.print_board() << std::endl;
-                file.close();
+                // std::ofstream file("log.txt", std::ios::app);
+                // file << b.print_board() << std::endl;
+                // file.close();
                 break;
             } else {
                 std::cout << "Unknown command: " << split.at(0) << std::endl;

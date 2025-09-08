@@ -1,255 +1,149 @@
-
-r n b q k b n r 
-p p p p p p p p 
-                
-                
-                
-                
-P P P P P P P P 
-R N B Q K B N R 
-
-
-FEN: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
-Hash: 2347198953488806808
-
-
-
-r n b q k b n r 
-p p p p p p p p 
-                
-                
-                
-                
-P P P P P P P P 
-R N B Q K B N R 
-
-
-FEN: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
-Hash: 2347198953488806808
-
-
-
-r n b q k b n r 
-p p p p p p p p 
-                
-                
-                
-                
-P P P P P P P P 
-R N B Q K B N R 
-
-
-FEN: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
-Hash: 2347198953488806808
-
-
-
-r       k     r 
-p   p p q p b   
-b n     p n p   
-      P N       
-  p     P       
-    N     Q   p 
-P P P B B P P P 
-R       K     R 
-
-
-FEN: r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1
-Hash: 2922940306402652595
-
-
-
-r n b q k b n r 
-p p p p p p p p 
-                
-                
-                
-                
-P P P P P P P P 
-R N B Q K B N R 
-
-
-FEN: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
-Hash: 2347198953488806808
-
-
-
-r n b q k b n r 
-p p p p p p p p 
-                
-                
-                
-                
-P P P P P P P P 
-R N B Q K B N R 
-
-
-FEN: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
-Hash: 2347198953488806808
-
-
-
-r n b q k b n r 
-p p p p p p p p 
-                
-                
-                
-                
-P P P P P P P P 
-R N B Q K B N R 
-
-
-FEN: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
-Hash: 2347198953488806808
-
-
-
-r n b q k b n r 
-p p p p p p p p 
-                
-                
-                
-                
-P P P P P P P P 
-R N B Q K B N R 
-
-
-FEN: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
-Hash: 2347198953488806808
-
-
-
-r n b q k b n r 
-p p p p p p p p 
-                
-                
-                
-                
-P P P P P P P P 
-R N B Q K B N R 
-
-
-FEN: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
-Hash: 2347198953488806808
-
-
-
-r n b q k b n r 
-p p p p p p p p 
-                
-                
-                
-                
-P P P P P P P P 
-R N B Q K B N R 
-
-
-FEN: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
-Hash: 2347198953488806808
-
-
-
-r n b q k b n r 
-p p p p p p p p 
-                
-                
-                
-                
-P P P P P P P P 
-R N B Q K B N R 
-
-
-FEN: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
-Hash: 2347198953488806808
-
-
-
-r       k     r 
-p   p p q p b   
-b n     p n p   
-      P N       
-  p     P       
-    N     Q   p 
-P P P B B P P P 
-R       K     R 
-
-
-FEN: r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1
-Hash: 2922940306402652595
-
-
-
-r       k     r 
-p   p p q p b   
-b n     p n p   
-      P N       
-  p     P       
-    N     Q   p 
-P P P B B P P P 
-R       K     R 
-
-
-FEN: r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1
-Hash: 2922940306402652595
-
-
-
-r n b q k b n r 
-p p p p p p p p 
-                
-                
-                
-                
-P P P P P P P P 
-R N B Q K B N R 
-
-
-FEN: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
-Hash: 2347198953488806808
-
-
-
-r n b q k b n r 
-p p p p p p p p 
-                
-                
-                
-                
-P P P P P P P P 
-R N B Q K B N R 
-
-
-FEN: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
-Hash: 2347198953488806808
-
-
-
-r n b q k b n r 
-p p p p p p p p 
-                
-                
-                
-                
-P P P P P P P P 
-R N B Q K B N R 
-
-
-FEN: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
-Hash: 2347198953488806808
-
-
-
-r n b q k b n r 
-p p p p p p p p 
-                
-                
-                
-                
-P P P P P P P P 
-R N B Q K B N R 
-
-
-FEN: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
-Hash: 2347198953488806808
-
+2025-09-06 07:24:52,749 Arena 3.5.1
+2025-09-06 07:24:52,749Font Arena Chess Figurine MISSING
+
+2025-09-06 07:24:53,262**----------New game---2025-09-06 07:24:53,262 Szo -------------
+2025-09-06 07:24:53,345screen: 1536x864
+2025-09-06 07:24:53,345Monitors: 1
+2025-09-06 07:24:53,345Monitor0: 1536x864
+2025-09-06 07:24:53,345FormMonitor: 0
+2025-09-06 07:24:53,345DesktopRect: 0/0 .. 1536/864
+2025-09-06 07:27:01,6201--------------------Starting engine 1 Leandor 2.0 64-bit--------------------
+2025-09-06 07:27:01,6221Configured Engine 1 Type: UCI
+2025-09-06 07:27:01,6221Engine 1 dir: E:\Sakk\UCI-engines\Leandor
+2025-09-06 07:27:01,6221Engine 1 commandline: E:\Sakk\UCI-engines\Leandor\Leandor_2.0-x64.exe
+2025-09-06 07:27:01,7351Child Process Prio Adj: PID 25164 conhost.exe
+2025-09-06 07:27:01,7491Engine 1 ProcessID: 15644
+2025-09-06 07:27:01,7491Engine 1 Prio:32 ThreadPrio:0
+2025-09-06 07:27:01,778<--1:Compiled using g++
+2025-09-06 07:27:01,778<--1:Leandor 2.0.0 by Oliver Leenders. Copyright (C) 2021. Ready to receive commands...
+2025-09-06 07:27:01,778-->1:uci
+2025-09-06 07:27:01,778<--1:id name Leandor 2.0.0
+2025-09-06 07:27:01,778<--1:id author Oliver Leenders
+2025-09-06 07:27:01,778<--1:option name Hash type spin default 64 min 1 max 4096
+2025-09-06 07:27:01,778<--1:uciok
+2025-09-06 07:27:01,778-->1:setoption name Hash value 256
+2025-09-06 07:27:01,7851Child Process Prio Adj: PID 25164 conhost.exe
+2025-09-06 07:27:01,785<--1:Unknown command: uci
+2025-09-06 07:27:01,787-->1:isready
+2025-09-06 07:27:01,842<--1:Hash set to 256 MB
+2025-09-06 07:27:01,842<--1:readyok
+2025-09-06 07:27:07,3611Child Process Prio Adj: PID 25164 conhost.exe
+2025-09-06 07:32:48,958-->1:quit
+2025-09-06 07:32:49,4761--------------------Starting engine 1 Amelia 0.15 64-bit--------------------
+2025-09-06 07:32:49,4761Configured Engine 1 Type: UCI
+2025-09-06 07:32:49,4761Engine 1 dir: E:\Sakk\UCI-engines\Amelia
+2025-09-06 07:32:49,4761Engine 1 commandline: E:\Sakk\UCI-engines\Amelia\Amelia_0.15-x64.exe
+2025-09-06 07:32:49,5911Child Process Prio Adj: PID 19172 conhost.exe
+2025-09-06 07:32:49,5911Engine 1 ProcessID: 29804
+2025-09-06 07:32:49,5911Engine 1 Prio:32 ThreadPrio:0
+2025-09-06 07:32:49,618-->1:uci
+2025-09-06 07:32:49,630<--1:id name Amelia v0.15
+2025-09-06 07:32:49,630<--1:id author Joey Bednar
+2025-09-06 07:32:49,633<--1:uciok
+2025-09-06 07:32:49,6341Child Process Prio Adj: PID 19172 conhost.exe
+2025-09-06 07:32:49,634-->1:isready
+2025-09-06 07:32:49,698<--1:readyok
+2025-09-06 07:32:54,5651Child Process Prio Adj: PID 19172 conhost.exe
+2025-09-06 07:34:23,532****Tour======== Tournament 1 ========
+2025-09-06 07:34:23,784Tour**
+2025-09-06 07:34:23,784TourPairing 1/16: Leandor 2.0 64-bit - Amelia 0.15 64-bit
+2025-09-06 07:34:23,799-->1:quit
+2025-09-06 07:34:24,1811--------------------Starting engine 1 Leandor 2.0 64-bit--------------------
+2025-09-06 07:34:24,1811Configured Engine 1 Type: UCI
+2025-09-06 07:34:24,1811Engine 1 dir: E:\Sakk\UCI-engines\Leandor
+2025-09-06 07:34:24,1811Engine 1 commandline: E:\Sakk\UCI-engines\Leandor\Leandor_2.0-x64.exe
+2025-09-06 07:34:24,2921Child Process Prio Adj: PID 26008 conhost.exe
+2025-09-06 07:34:24,2921Engine 1 ProcessID: 26784
+2025-09-06 07:34:24,2921Engine 1 Prio:32 ThreadPrio:0
+2025-09-06 07:34:24,324<--1:Compiled using g++
+2025-09-06 07:34:24,324-->1:uci
+2025-09-06 07:34:24,324<--1:Leandor 2.0.0 by Oliver Leenders. Copyright (C) 2021. Ready to receive commands...
+2025-09-06 07:34:24,324<--1:id name Leandor 2.0.0
+2025-09-06 07:34:24,324<--1:id author Oliver Leenders
+2025-09-06 07:34:24,324<--1:option name Hash type spin default 64 min 1 max 4096
+2025-09-06 07:34:24,324<--1:uciok
+2025-09-06 07:34:24,324-->1:setoption name Hash value 256
+2025-09-06 07:34:24,3291Child Process Prio Adj: PID 26008 conhost.exe
+2025-09-06 07:34:24,329<--1:Unknown command: uci
+2025-09-06 07:34:24,329-->1:isready
+2025-09-06 07:34:24,500<--1:Hash set to 256 MB
+2025-09-06 07:34:24,500<--1:readyok
+2025-09-06 07:34:24,7862--------------------Starting engine 2 Amelia 0.15 64-bit--------------------
+2025-09-06 07:34:24,7862Configured Engine 2 Type: UCI
+2025-09-06 07:34:24,7862Engine 2 dir: E:\Sakk\UCI-engines\Amelia
+2025-09-06 07:34:24,7862Engine 2 commandline: E:\Sakk\UCI-engines\Amelia\Amelia_0.15-x64.exe
+2025-09-06 07:34:24,9012Child Process Prio Adj: PID 15964 conhost.exe
+2025-09-06 07:34:24,9012Engine 2 ProcessID: 20000
+2025-09-06 07:34:24,9012Engine 2 Prio:32 ThreadPrio:0
+2025-09-06 07:34:24,928-->2:uci
+2025-09-06 07:34:24,929<--2:id name Amelia v0.15
+2025-09-06 07:34:24,929<--2:id author Joey Bednar
+2025-09-06 07:34:24,929<--2:uciok
+2025-09-06 07:34:24,9332Child Process Prio Adj: PID 15964 conhost.exe
+2025-09-06 07:34:24,933-->2:isready
+2025-09-06 07:34:25,101<--2:readyok
+2025-09-06 07:34:25,465****TourRound 1 of 32: Leandor 2.0 64-bit - Amelia 0.15 64-bit
+2025-09-06 07:34:25,475**----------New game---2025-09-06 07:34:25,475 Szo -------------
+2025-09-06 07:34:25,475Loading book: E:\Sakk\Arena2\Books\SideLines.abk
+2025-09-06 07:34:25,5171Child Process Prio Adj: PID 26008 conhost.exe
+2025-09-06 07:34:25,5171Start calc, move no: 0
+2025-09-06 07:34:25,5171Main Book Move SideLines.abk: e2e4
+2025-09-06 07:34:25,6922Child Process Prio Adj: PID 15964 conhost.exe
+2025-09-06 07:34:25,6922Start calc, move no: 1
+2025-09-06 07:34:25,6922Main Book Move SideLines.abk: e7e5
+2025-09-06 07:34:25,8491Child Process Prio Adj: PID 26008 conhost.exe
+2025-09-06 07:34:25,8511Start calc, move no: 2
+2025-09-06 07:34:25,8511Main Book Move SideLines.abk: g1f3
+2025-09-06 07:34:26,0062Child Process Prio Adj: PID 15964 conhost.exe
+2025-09-06 07:34:26,0062Start calc, move no: 3
+2025-09-06 07:34:26,0062Main Book Move SideLines.abk: b8c6
+2025-09-06 07:34:26,1651Child Process Prio Adj: PID 26008 conhost.exe
+2025-09-06 07:34:26,1651Start calc, move no: 4
+2025-09-06 07:34:26,1731Main Book Move SideLines.abk: b1c3
+2025-09-06 07:34:26,3242Child Process Prio Adj: PID 15964 conhost.exe
+2025-09-06 07:34:26,3302Start calc, move no: 5
+2025-09-06 07:34:26,3312Main Book Move SideLines.abk: g8f6
+2025-09-06 07:34:26,4861Child Process Prio Adj: PID 26008 conhost.exe
+2025-09-06 07:34:26,4861Start calc, move no: 6
+2025-09-06 07:34:26,4861Main Book Move SideLines.abk: d2d4
+2025-09-06 07:34:26,6472Child Process Prio Adj: PID 15964 conhost.exe
+2025-09-06 07:34:26,6472Start calc, move no: 7
+2025-09-06 07:34:26,6472Main Book Move SideLines.abk: f8b4
+2025-09-06 07:34:26,8061Child Process Prio Adj: PID 26008 conhost.exe
+2025-09-06 07:34:26,8061Start calc, move no: 8
+2025-09-06 07:34:26,8061Main Book Move SideLines.abk: f3e5
+2025-09-06 07:34:26,9602Child Process Prio Adj: PID 15964 conhost.exe
+2025-09-06 07:34:26,9602Start calc, move no: 9
+2025-09-06 07:34:26,966-->2:ucinewgame
+2025-09-06 07:34:26,966-->2:isready
+2025-09-06 07:34:26,966<--2:readyok
+2025-09-06 07:34:26,966<--2:readyok
+2025-09-06 07:34:26,986-->2:position startpos moves e2e4 e7e5 g1f3 b8c6 b1c3 g8f6 d2d4 f8b4 f3e5
+2025-09-06 07:34:26,986-->2:go wtime 95000 btime 94000 winc 1000 binc 1000
+2025-09-06 07:34:29,841<--2:info depth 1 score cp -19 nodes 84 nps -2147483648 time 0 pv c6e5
+2025-09-06 07:34:29,841<--2:info depth 2 score cp -19 nodes 879 nps -2147483648 time 0 pv c6e5 d4e5
+2025-09-06 07:34:29,857<--2:info depth 3 score cp -13 nodes 5372 nps -2147483648 time 0 pv f6e4 c1d2 e4d2
+2025-09-06 07:34:29,873<--2:info depth 4 score cp -22 nodes 14558 nps 2911600 time 5 pv f6e4 d1f3 c6e5 d4e5
+2025-09-06 07:34:29,889<--2:info depth 5 score cp -33 nodes 54332 nps 2587238 time 21 pv d8e7 e5c6 e7e4 c1e3 d7c6
+2025-09-06 07:34:29,889<--2:info depth 6 score cp -42 nodes 177912 nps 3356830 time 53 pv d8e7 c1d2 c6e5 d4e5 e7e5 f1d3
+2025-09-06 07:34:29,905<--2:info depth 7 score cp -17 nodes 464288 nps 2976205 time 156 pv d8e7 c1f4 f6e4 d1d3 d7d5 e5c6 b7c6
+2025-09-06 07:34:29,921<--2:info depth 8 score cp -20 nodes 1188206 nps 3023424 time 393 pv d8e7 c1f4 f6e4 d1d3 d7d5 e5c6 b7c6 f1e2
+2025-09-06 07:34:29,921<--2:info depth 9 score cp -10 nodes 3502517 nps -792451 time 1000 pv d8e7 e5c6 e7e4 d1e2 d7c6 c1d2 e4e2 f1e2 e8g8
+2025-09-06 07:34:29,936<--2:info depth 10 score cp -12 nodes 9656062 nps 376457 time 2832 pv d8e7 e5c6 e7e4 d1e2 d7c6 c1d2 e4e2 f1e2 c8f5 e2d3
+2025-09-06 07:34:29,952<--2:bestmove d8e7
+2025-09-06 07:34:29,9522Found move:Qd8-e7
+2025-09-06 07:34:30,1121Child Process Prio Adj: PID 26008 conhost.exe
+2025-09-06 07:34:30,1121Start calc, move no: 10
+2025-09-06 07:34:30,112-->1:ucinewgame
+2025-09-06 07:34:30,112-->1:isready
+2025-09-06 07:34:34,233-->1:position startpos moves e2e4 e7e5 g1f3 b8c6 b1c3 g8f6 d2d4 f8b4 f3e5 d8e7
+2025-09-06 07:34:34,233-->1:go wtime 95000 btime 92036 winc 1000 binc 1000
+2025-09-06 07:36:10,933-->1:stop
+2025-09-06 07:36:12,170****TourGame end: 0-1 {0-1 White forfeits on time}
+2025-09-06 07:36:12,170Tour**Last game won by Amelia 0.15 64-bit with Black in 6 moves
+2025-09-06 07:36:12,170TourLeandor 2.0 64-bit - Amelia 0.15 64-bit:
+2025-09-06 07:36:12,170****Tour 1 B 2 1,0:0,0 0,0:1,0 7:36:12 0.00 6 0:10,000 0-1-0
+2025-09-06 07:36:12,202Tour**Saving file E:\Sakk\Arena2\Tournaments\Leandor 2.0 64-bit - Sep 6.pgn Round:1 2025.09.06 07:34:25
+2025-09-06 07:36:12,215Tour**stopping engine calculation after game...
+2025-09-06 07:36:12,215-->1:stop
 

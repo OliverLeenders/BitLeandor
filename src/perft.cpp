@@ -152,7 +152,6 @@ uint64_t perft::run_perft_staged_console(bitboard *b, int depth) {
         std::cout << bit_move::to_string(m) << ": ";
 
         b->make_move(&m);
-        bool side_to_move = b->side_to_move;
 
         uint64_t curr_nodes = run_perft_staged(b, depth - 1, 1);
         nodes += curr_nodes;

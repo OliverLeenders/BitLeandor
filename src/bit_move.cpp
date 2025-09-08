@@ -24,9 +24,6 @@ const std::vector<uint8_t> bit_move::flag_list = {quiet_move,
                                                   rook_capture_promotion,
                                                   queen_capture_promotion};
 
-bit_move::bit_move() { this->move = 0; }
-
-bit_move::~bit_move() {}
 
 uint8_t bit_move::get_origin() { return (this->move >> 6) & 63; }
 

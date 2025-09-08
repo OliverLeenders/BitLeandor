@@ -8,7 +8,7 @@ class transposition_table {
   public:
     static const int VAL_UNKNOWN = 200000;
     static const int MAX_SIZE_MB = 4096; // 4 GB
-    transposition_table(int size_in_mb = 16);
+    transposition_table(int size_in_mb = 64);
 
     transposition_table(const transposition_table &) = delete;
     transposition_table &operator=(const transposition_table &) = delete;
@@ -50,6 +50,6 @@ class transposition_table {
      * @return int score of the position
      */
     int probe(uint64_t key, int depth, int ply, int alpha, int beta, bit_move *m);
-    int probe_qsearch(uint64_t key, int ply, int alpha, int beta, bit_move *m);
+    int probe_qsearch(uint64_t key, int alpha, int beta, bit_move *m);
     ~transposition_table();
 };
