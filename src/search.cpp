@@ -379,12 +379,24 @@ int search::alpha_beta(bitboard *b, int depth, int alpha, int beta, int ply) {
 
     // `move` object to hold generated moves.
     bit_move m = bit_move();
+    uint8_t num_quiet_moves = 0;
+    int8_t LMR = 0;
 
     movegen::init_movegen(hash_move, ply, side_to_move, movegen::HASH_MOVE);
+    
 
     while (movegen::provide_next_move(b, &m)) {
         num_legal++;
-        // uint8_t move_flags = m.get_flags();
+        uint8_t move_flags = m.get_flags();
+        if (move_flags < bit_move::capture) {
+            num_quiet_moves++;
+        }
+
+        if (num_quiet_moves > 2 && depth >= 3 && !is_check && !pv && move_flags == bit_move::quiet_move) {
+            LMR = 1;
+        } else {
+            LMR = 0;
+        }
 
         b->make_move(&m);
         NODES_SEARCHED++;
@@ -392,12 +404,12 @@ int search::alpha_beta(bitboard *b, int depth, int alpha, int beta, int ply) {
 
         // PVS-Implementation
         if (num_legal <= 1) {
-            score = -alpha_beta(b, depth - 1, -beta, -alpha, ply + 1);
+            score = -alpha_beta(b, depth - 1 - LMR, -beta, -alpha, ply + 1);
         } else {
             // zero window search
-            score = -alpha_beta(b, depth - 1, -(alpha + 1), -alpha, ply + 1);
+            score = -alpha_beta(b, depth - 1 - LMR, -(alpha + 1), -alpha, ply + 1);
             if (score > alpha && score < beta) {
-                score = -alpha_beta(b, depth - 1, -beta, -alpha, ply + 1);
+                score = -alpha_beta(b, depth - 1 - LMR, -beta, -alpha, ply + 1);
             }
         }
         // unmake the move on the board

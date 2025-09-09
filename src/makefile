@@ -5,9 +5,20 @@ CXXFLAGS=-std=c++17 -Wall -Wextra -Wpedantic -g -fanalyzer
 # when generating a profile build, include debug info
 DEBUG_FLAGS=-g2 -fsanitize=address
 # less optimization for profile builds
-OPTIMIZATION_FLAGS_PROFILE=-O0 -march=native
+
+all: avx2 avx512 x86-64
+
+avx2: CXXFLAGS += -mavx2
+avx512: CXXFLAGS += -mavx512
+x86-64: CXXFLAGS += -m64
+
+avx2: engine
+avx512: engine
+x86-64: engine
+
+OPTIMIZATION_FLAGS_PROFILE=-O0
 # more optimization for release builds
-OPTIMIZATION_FLAGS =-O3 -march=native -flto=auto
+OPTIMIZATION_FLAGS =-O3 -flto=auto
 
 # directories for building
 OBJDIR=object_files
@@ -22,6 +33,10 @@ date = $(shell date '+%d%m%Y--%H%M')
 # naming conventions
 NAME="Leandor dev 2.0.0 $(date).exe"
 NAME_PROFILE="Leandor dev 2.0.0 profile.exe"
+
+avx2: NAME="Leandor dev 2.0.0 avx2 $(date).exe"
+avx512: NAME="Leandor dev 2.0.0 avx512 $(date).exe"
+x86-64: NAME="Leandor dev 2.0.0 x86-64 $(date).exe"
 
 # all source files
 SRCS = $(wildcard *.cpp)
