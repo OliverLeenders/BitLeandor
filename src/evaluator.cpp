@@ -9,7 +9,7 @@ int evaluator::eval(bitboard *b) {
     int midgame_score = 0;
     int endgame_score = 0;
 
-    uint8_t phase = 0;
+    int phase = b->game_phase;
 
     // check if position is a drawn endgame
     if (is_draw(b)) {
@@ -26,6 +26,28 @@ int evaluator::eval(bitboard *b) {
     endgame_score = b->PST_score_EG;
 
 
+    // // bishop mobility
+    // uint64_t occ = b->occupancy[2];
+    // uint64_t bishops = b->bbs[BISHOP][WHITE] | b->bbs[BISHOP][BLACK];
+    // int index;
+    // int factor;
+    // while (bishops != 0ULL) {
+    //     index = BitScanForward64(bishops);
+    //     factor = (b->pieces[index] < BLACK_PAWN) ? 1 : -1;
+    //     midgame_score += (int)((float)PopCount64(attacks::get_bishop_attacks(index, occ)) * weights::mobility_factors[BISHOP] * factor);
+    //     endgame_score += (int)((float)PopCount64(attacks::get_bishop_attacks(index, occ)) * weights::mobility_factors[BISHOP] * factor);
+    //     bishops &= reset_lsb(bishops);
+    // }
+
+    // // rook mobility
+    // uint64_t rooks = b->bbs[ROOK][WHITE] | b->bbs[ROOK][BLACK];
+    // while (rooks != 0ULL) {
+    //     index = BitScanForward64(rooks);
+    //     factor = (b->pieces[index] < BLACK_PAWN) ? 1 : -1;
+    //     midgame_score += (int)((float)PopCount64(attacks::get_rook_attacks(index, occ)) * weights::mobility_factors[ROOK] * factor);
+    //     endgame_score += (int)((float)PopCount64(attacks::get_rook_attacks(index, occ)) * weights::mobility_factors[ROOK] * factor);
+    //     rooks &= reset_lsb(rooks);
+    // }
 
 
     // if there are pawns on the board, evaluate the pawn structure
@@ -39,7 +61,7 @@ int evaluator::eval(bitboard *b) {
     //
     //============================================================================================//
 
-    int score = (midgame_score * (weights::game_phase_sum - phase) + endgame_score * phase) /
+    int score = (midgame_score * phase + endgame_score * (weights::game_phase_sum - phase)) /
                 weights::game_phase_sum;
 
     // scores need to be from the perspective of the side to move

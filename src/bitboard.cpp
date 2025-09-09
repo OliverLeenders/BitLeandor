@@ -82,6 +82,9 @@ void bitboard::pos_from_fen(std::string fen) {
         this->types[i] = EMPTY;
         this->pieces[i] = EMPTY_PIECE;
     }
+
+    game_phase = 0;
+
     int fen_pos_index = 0;
     for (int i = 7; i >= 0; i--) {
         for (int j = 0; j < 8; j++) {
@@ -93,40 +96,52 @@ void bitboard::pos_from_fen(std::string fen) {
             } else {
                 switch (c) {
                 case 'P':
+                    game_phase += weights::game_phase_values[PAWN];
                     this->place_piece<true, true>(WHITE_PAWN, board_index);
                     break;
                 case 'p':
+                    game_phase += weights::game_phase_values[PAWN];
                     this->place_piece<true, true>(BLACK_PAWN, board_index);
                     break;
                 case 'N':
+                    game_phase += weights::game_phase_values[KNIGHT];
                     this->place_piece<true, true>(WHITE_KNIGHT, board_index);
                     break;
                 case 'n':
+                    game_phase += weights::game_phase_values[KNIGHT];
                     this->place_piece<true, true>(BLACK_KNIGHT, board_index);
                     break;
                 case 'B':
+                    game_phase += weights::game_phase_values[BISHOP];
                     this->place_piece<true, true>(WHITE_BISHOP, board_index);
                     break;
                 case 'b':
+                    game_phase += weights::game_phase_values[BISHOP];
                     this->place_piece<true, true>(BLACK_BISHOP, board_index);
                     break;
                 case 'R':
+                    game_phase += weights::game_phase_values[ROOK];
                     this->place_piece<true, true>(WHITE_ROOK, board_index);
                     break;
                 case 'r':
+                    game_phase += weights::game_phase_values[ROOK];
                     this->place_piece<true, true>(BLACK_ROOK, board_index);
                     break;
                 case 'Q':
+                    game_phase += weights::game_phase_values[QUEEN];
                     this->place_piece<true, true>(WHITE_QUEEN, board_index);
                     break;
                 case 'q':
+                    game_phase += weights::game_phase_values[QUEEN];
                     this->place_piece<true, true>(BLACK_QUEEN, board_index);
                     break;
                 case 'K':
+                    game_phase += weights::game_phase_values[KING];
                     this->place_piece<true, true>(WHITE_KING, board_index);
                     this->king_positions[WHITE] = board_index;
                     break;
                 case 'k':
+                    game_phase += weights::game_phase_values[KING];
                     this->place_piece<true, true>(BLACK_KING, board_index);
                     this->king_positions[BLACK] = board_index;
                     break;
@@ -322,7 +337,7 @@ int bitboard::piece_to_char(uint8_t piece) {
 void bitboard::make_null_move() {
     this->game_history.emplace_back(zobrist_key, pawn_hash_key, ep_target_square, bit_move(),
                                     PST_score_MG, PST_score_EG, fifty_move_rule_counter,
-                                    castling_rights);
+                                    castling_rights, game_phase);
     this->side_to_move = !this->side_to_move;
     this->zobrist_key ^= transposition_table::side_key;
     this->fifty_move_rule_counter = 0;
@@ -513,6 +528,7 @@ std::string bitboard::print_board() {
     stream << std::endl;
     stream << "FEN: " << pos_to_fen() << std::endl;
     stream << "Hash: " << zobrist_key << std::endl;
+    stream << "Game phase: " << game_phase << std::endl;
     stream << std::endl;
     std::cout << stream.str();
     return stream.str();
@@ -534,7 +550,8 @@ void bitboard::make_move(bit_move *m) {
                               PST_score_MG,            // incremental update PST midgame score
                               PST_score_EG,            // incremental update PST endgame score
                               fifty_move_rule_counter, // 50 move counter for restoration
-                              castling_rights);        // castling rights char
+                              castling_rights,         // castling rights for restoration
+                              game_phase);             // game phase for restoration
     // extract move details
 
     // clang-format off
@@ -572,6 +589,7 @@ void bitboard::make_move(bit_move *m) {
                 }
             }
         }
+        game_phase -= weights::game_phase_values[captured_type];
     }
 
     // updating the zobrist key for the switch of the moving side
@@ -594,6 +612,7 @@ void bitboard::make_move(bit_move *m) {
             } else {
                 place_piece<true, true>(flags - 7 + (!side_to_move) * BLACK_PAWN, target);
             }
+            game_phase += weights::game_phase_values[flags - 7];
             return;
         } else if (flags == bit_move::ep_capture) {
             side_to_move = 1 - side_to_move;
@@ -615,7 +634,6 @@ void bitboard::make_move(bit_move *m) {
         }
         king_positions[side_to_move] = target;
         side_to_move = !side_to_move;
-
         unset_piece<true, true>(origin);
         if (is_capture) {
             unset_piece<true, true>(target);
@@ -690,6 +708,7 @@ void bitboard::unmake_move() {
     castling_rights             = prev_board_state.castling_rights;
     PST_score_MG                = prev_board_state.PST_score_MG;
     PST_score_EG                = prev_board_state.PST_score_EG;
+    game_phase                  = prev_board_state.game_phase;
 
     bit_move prev_move          = prev_board_state.last_move;
     // declare useful const variables
@@ -800,7 +819,6 @@ void bitboard::place_piece(uint8_t piece, uint8_t target) {
                               weights::piece_square_tables[ENDGAME][piece][target];
     }
 }
-
 
 template <bool update_zobrist, bool update_score> void bitboard::unset_piece(uint8_t target) {
     const uint8_t piece = pieces[target];

@@ -46,9 +46,7 @@ int search::QNODES_SEARCHED = 0;
 
 int search::lmr[MAX_DEPTH][MAX_DEPTH] = {{0}};
 
-void search::set_hash_size(int size_mb) {
-    tt.set_size(size_mb);
-}
+void search::set_hash_size(int size_mb) { tt.set_size(size_mb); }
 
 int search::search_iterative_deepening(bitboard *b, int depth, bool quiet) {
     stop_now = false;
@@ -65,6 +63,8 @@ int search::search_iterative_deepening(bitboard *b, int depth, bool quiet) {
     //============================================================================================//
 
     STARTTIME = std::chrono::high_resolution_clock::now();
+    int prev_alpha_bound = -MATE;
+    int prev_beta_bound = MATE;
 
     for (curr_depth = 1; curr_depth <= depth; curr_depth++) {
         // clang-format off
@@ -91,35 +91,38 @@ int search::search_iterative_deepening(bitboard *b, int depth, bool quiet) {
 
             valid_score = false;
             // set aspiration window -- narrow at first
-            int prev_alpha = prev_score - HALF_ASPIRATION_WINDOW;
-            int prev_beta = prev_score + HALF_ASPIRATION_WINDOW;
+            int aspiration_alpha = prev_score - HALF_ASPIRATION_WINDOW;
+            int aspiration_beta = prev_score + HALF_ASPIRATION_WINDOW;
+            prev_alpha_bound = aspiration_alpha;
+            prev_beta_bound = aspiration_beta;
 
             // search with aspiration window
-            score = alpha_beta(b, curr_depth, prev_alpha, prev_beta, 0);
+            score = alpha_beta(b, curr_depth, aspiration_alpha, aspiration_beta, 0);
 
             // count the number of aspiration window failures
             num_fails = 0;
 
             // as long as the score is outside the window, reset PV + bestmove and search again
-            while ((score <= prev_alpha || score >= prev_beta) && !stop_now) {
+            while (!stop_now && (score <= aspiration_alpha || score >= aspiration_beta)) {
                 // std::cout << "ASPIRATION FAIL " << ((score <= prev_alpha) ? "LOW" : "HIGH")
                 //           << " => re-searching ..." << std::endl
                 //           << score << std::endl;
 
                 // if the score is too low, decrease alpha => increase aspiration window
-                prev_alpha = (score <= prev_alpha)
-                                 ? prev_alpha - (HALF_ASPIRATION_WINDOW << num_fails)
-                                 : prev_alpha;
+                aspiration_alpha = (score <= aspiration_alpha)
+                                       ? aspiration_alpha - (HALF_ASPIRATION_WINDOW << num_fails)
+                                       : aspiration_alpha;
                 // if the score is too high, increase beta => increase aspiration window
-                prev_beta = (score >= prev_beta) ? prev_beta + (HALF_ASPIRATION_WINDOW << num_fails)
-                                                 : prev_beta;
+                aspiration_beta = (score >= aspiration_beta)
+                                      ? aspiration_beta + (HALF_ASPIRATION_WINDOW << num_fails)
+                                      : aspiration_beta;
                 // research
-                score = alpha_beta(b, curr_depth, prev_alpha, prev_beta, 0);
+                score = alpha_beta(b, curr_depth, aspiration_alpha, aspiration_beta, 0);
                 num_fails++;
             }
             // if we abort due to time (or quit) we should only use the score if it lies inside the
             // aspiration window, since it would need to be re-searched otherwise
-            if (score > prev_alpha && score < prev_beta && !stop_now) {
+            if (score > aspiration_alpha && score < aspiration_beta && !stop_now) {
                 prev_score = score;
                 valid_score = true;
             }
@@ -138,23 +141,33 @@ int search::search_iterative_deepening(bitboard *b, int depth, bool quiet) {
             // log results according to UCI specification
             std::cout << "info depth " << curr_depth // log the depth
                       << " seldepth " << SELDEPTH    // log the selective search depth
-                      << " multipv 1";               // hardcoded multipv value (not supported)
+                      << " multipv 1 ";               // hardcoded multipv value (not supported)
 
             // if score is a centipawn value (NO MATE) ...
-            if (std::abs(score) < MATE - MAX_DEPTH - 1) {
-                // print cp score
-                std::cout << " score cp " << score << " ";
+            bool is_mate_val = std::abs(score) >= MATE - MAX_DEPTH - 1;
+            if (!is_mate_val) {
+                if (!valid_score) {
+                    if (score <= prev_alpha_bound) {
+                        std::cout << "score cp " << prev_alpha_bound << " lowerbound ";
+                    } else if (score >= prev_beta_bound) {
+                        std::cout << "score cp " << prev_beta_bound << " upperbound ";
+                    } else {
+                        // inside window but stopped early (rare) – print previous stable score as
+                        // bound
+                        std::cout << "score cp " << prev_score << " ";
+                    }
+                } else {
+                    std::cout << "score cp " << score << " ";
+                }
             } else {
-                // print mate score
-                // if the search is complete, the score is valid (no lower/upper bound)
                 if (valid_score) {
-                    std::cout << " score mate "
+                    std::cout << "score mate "
                               << utility::sgn(score) * (MATE - std::abs(score) + 1) / 2 << " ";
                 } else {
-                    // score is bound and needs to be treated as such
-                    std::cout << " score mate "
-                              << utility::sgn(prev_score) * (MATE - std::abs(prev_score) + 1) / 2
-                              << " ";
+                    int bounded = (score >= 0 ? prev_beta_bound : prev_alpha_bound);
+                    std::cout << "score mate "
+                              << utility::sgn(bounded) * (MATE - std::abs(bounded) + 1) / 2 << " "
+                              << ((score >= prev_beta_bound) ? "upperbound " : "lowerbound ");
                 }
             }
 
@@ -482,13 +495,13 @@ int search::quiescence(bitboard *b, int alpha, int beta, int ply) {
         bit_move m = moves[ply].moves[i].m;
         if (b->is_legal<true>(&m)) {
             num_legal++;
-            
+
             //====================================================================================//
             //
             // delta pruning
             //
             //====================================================================================//
-            
+
             // int delta = alpha - static_eval - 250;
             // if (!is_check             // do not prune if in check
             //     && m.get_flags() >= 4 // if move is capture or promotion

@@ -34,8 +34,8 @@ const uint8_t weights::game_phase_values[6] = {0,
 // total : 16 + 16 + 24 + 20 = 76
 const uint8_t weights::game_phase_sum = 76;
 
-const float weights::mobility_factors[6] = {1.0, 1.0, // bishop
-                                            1.0,      // rook
+const float weights::mobility_factors[6] = {2.5, 2.5, // bishop
+                                            2.0,      // rook
                                             0.5,      // queen
                                             0.5, 1};
 

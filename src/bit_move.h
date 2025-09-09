@@ -9,6 +9,15 @@ class bit_move {
   public:
     uint32_t move = 0U;
 
+    /**
+     * @brief Construct a new bit move object
+     *
+     * @param origin the origin square (0-63)
+     * @param target the target square (0-63)
+     * @param flags the move flags
+     * @param type the piece type
+     * @param captured_type the captured piece type
+     */
     bit_move(uint8_t origin, uint8_t target, uint8_t flags, uint8_t type, uint8_t captured_type);
     /**
      * `0000 0000 0000 00000000 00000000`

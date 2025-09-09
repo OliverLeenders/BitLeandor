@@ -28,6 +28,8 @@ class bitboard {
     uint64_t zobrist_key = 0ULL;
     uint64_t pawn_hash_key = 0ULL;
 
+    int game_phase = 0;
+
     // scores for incremental update
     int16_t PST_score_MG = 0;
     int16_t PST_score_EG = 0;
@@ -40,6 +42,8 @@ class bitboard {
 
     // king positions (stored for faster access)
     uint8_t king_positions[2] = {0U, 0U};
+
+
     char castling_rights = 0;
 
     // side to move switch
